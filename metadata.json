@@ -1,0 +1,10 @@
+{
+  "name": "QuantumFlux Mobility",
+  "description": "Application tactile de gestion de flotte automobile nouvelle génération : gestion de flotte, réservations, check-in/out avec photos, scanner permis, diagramme de dommages et signature.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

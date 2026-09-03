@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --color-bg-deep: #0A0E1A;
+    --color-surface-card: #151B30;
+    --color-surface-header: #0D1224;
+    --color-accent-blue: #2563EB;
+    --color-accent-green: #10B981;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #0A0E1A;
+    color: #F8FAFC;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  /* Disable hover simulation on touch devices and emphasize active states */
+  @media (hover: none) {
+    .hover\:scale-105 {
+      transform: none !important;
+    }
+  }
+}
+
+/* Geometric Balance Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0E1A;
+}
+::-webkit-scrollbar-thumb {
+  background: #1F293D;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2D3748;
+}
+
+/* Geometric Balance Surfaces & Tactile Utilities */
+.geo-surface {
+  background-color: #151B30;
+  border: 1px solid #1F293D;
+}
+
+.geo-inner-card {
+  background-color: #0A0E1A;
+  border: 1px solid #1E2742;
+}
+
+.tactile-btn {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, opacity 0.12s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+.tactile-btn:active {
+  transform: scale(0.96);
+  filter: brightness(0.92);
+}
+
+.tactile-card {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s ease, background-color 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+.tactile-card:active {
+  transform: scale(0.985);
+}
+
+/* Safe area padding for mobile notches */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
+/* Dedicated Print Stylesheet */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Hide navigation, background overlay and modal action buttons */
+  .no-print,
+  nav,
+  header,
+  aside,
+  button,
+  .no-print-area {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* When printing the contract modal */
+  .printable-document {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+  }
+
+  .printable-document * {
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    background-color: transparent !important;
+  }
+
+  .printable-document .print-table th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+  }
+}
+

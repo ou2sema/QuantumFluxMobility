@@ -1,0 +1,12 @@
+{
+  "projectId": "quantumflux-mobility",
+  "appId": "1:711887714288:web:b1e3ab344e09da5f9d8f35",
+  "apiKey": "AIzaSyArZnefFhplHOffkc2YvRmPFdDd1PzX_Ps",
+  "authDomain": "quantumflux-mobility.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "quantumflux-mobility.firebasestorage.app",
+  "messagingSenderId": "711887714288",
+  "measurementId": "G-SMEFG2VFPD",
+  "oAuthClientId": "",
+  "recaptchaSiteKey": ""
+}

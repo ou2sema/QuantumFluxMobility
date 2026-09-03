@@ -1,0 +1,84 @@
+{
+  "schema": {
+    "version": "1.0.0",
+    "collections": {
+      "vehicles": {
+        "description": "Vehicle fleet items, status, mileage, pricing, fuel and specs",
+        "fields": {
+          "id": { "type": "string", "required": true },
+          "name": { "type": "string", "required": true },
+          "brand": { "type": "string", "required": true },
+          "model": { "type": "string", "required": true },
+          "plate": { "type": "string", "required": true },
+          "category": { "type": "string", "required": true },
+          "status": { "type": "string", "required": true },
+          "mileage": { "type": "number", "required": true },
+          "fuelLevel": { "type": "number", "required": true },
+          "fuelType": { "type": "string", "required": true },
+          "dailyRate": { "type": "number", "required": true },
+          "damages": { "type": "array", "required": true }
+        }
+      },
+      "bookings": {
+        "description": "Vehicle rental reservations and agreements",
+        "fields": {
+          "id": { "type": "string", "required": true },
+          "bookingNumber": { "type": "string", "required": true },
+          "clientId": { "type": "string", "required": true },
+          "clientName": { "type": "string", "required": true },
+          "vehicleId": { "type": "string", "required": true },
+          "vehicleName": { "type": "string", "required": true },
+          "startDate": { "type": "string", "required": true },
+          "endDate": { "type": "string", "required": true },
+          "status": { "type": "string", "required": true },
+          "totalAmount": { "type": "number", "required": true },
+          "depositAmount": { "type": "number", "required": true }
+        }
+      },
+      "clients": {
+        "description": "Registered clients, contacts and driver license data",
+        "fields": {
+          "id": { "type": "string", "required": true },
+          "firstName": { "type": "string", "required": true },
+          "lastName": { "type": "string", "required": true },
+          "email": { "type": "string", "required": true },
+          "phone": { "type": "string", "required": true },
+          "drivingLicenseNumber": { "type": "string", "required": true },
+          "status": { "type": "string", "required": true }
+        }
+      },
+      "maintenances": {
+        "description": "Maintenance, oil changes, brakes, and servicing records",
+        "fields": {
+          "id": { "type": "string", "required": true },
+          "vehicleId": { "type": "string", "required": true },
+          "vehiclePlate": { "type": "string", "required": true },
+          "type": { "type": "string", "required": true },
+          "title": { "type": "string", "required": true },
+          "cost": { "type": "number", "required": true },
+          "serviceDate": { "type": "string", "required": false },
+          "status": { "type": "string", "required": true }
+        }
+      },
+      "appUsers": {
+        "description": "Agency staff accounts, roles, and PIN codes",
+        "fields": {
+          "id": { "type": "string", "required": true },
+          "name": { "type": "string", "required": true },
+          "email": { "type": "string", "required": true },
+          "role": { "type": "string", "required": true },
+          "pin": { "type": "string", "required": true }
+        }
+      },
+      "agencies": {
+        "description": "Agency branch details and configuration",
+        "fields": {
+          "id": { "type": "string", "required": true },
+          "name": { "type": "string", "required": true },
+          "city": { "type": "string", "required": true },
+          "phone": { "type": "string", "required": true }
+        }
+      }
+    }
+  }
+}
