@@ -141,21 +141,21 @@ export const QuantumFluxLogo: React.FC<QuantumFluxLogoProps> = ({
 
   // Full / Horizontal / Compact Logo with Typography
   return (
-    <div className={`flex items-center gap-3 select-none ${className}`}>
+    <div className={`flex items-center gap-2 sm:gap-3 select-none min-w-0 ${className}`}>
       {renderIcon()}
 
-      <div className="flex flex-col justify-center leading-none">
-        <div className="flex items-center gap-1.5">
-          <span className="font-extrabold tracking-[0.14em] text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-sm font-sans text-base sm:text-lg">
+      <div className="flex flex-col justify-center leading-none min-w-0">
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <span className="font-extrabold tracking-[0.06em] sm:tracking-[0.12em] text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-sm font-sans text-sm sm:text-base md:text-lg whitespace-nowrap">
             QUANTUM<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 font-black">FLUX</span>
           </span>
-          <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-700/50">
+          <span className="hidden sm:inline-block text-[8px] sm:text-[9px] font-mono font-bold uppercase tracking-widest px-1 sm:px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 flex-shrink-0">
             PRO
           </span>
         </div>
 
         {showSubtitle && (
-          <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.08em] text-slate-400 mt-1 uppercase font-sans">
+          <span className="hidden sm:block text-[9px] sm:text-[10px] md:text-[11px] font-medium tracking-[0.06em] sm:tracking-[0.08em] text-slate-400 mt-0.5 sm:mt-1 uppercase font-sans truncate">
             Gestion de Mobilité Nouvelle Génération
           </span>
         )}

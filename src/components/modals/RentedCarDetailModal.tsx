@@ -403,14 +403,14 @@ export const RentedCarDetailModal: React.FC<RentedCarDetailModalProps> = ({
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {vehicle.damages.map((dmg, idx) => (
+                    {vehicle.damages.map((dmg: any, idx) => (
                       <div key={dmg.id || idx} className="p-2.5 rounded-xl bg-[#0A0E1A] border border-gray-800 flex items-center justify-between">
                         <div>
-                          <p className="font-bold text-white capitalize">{dmg.part} - {dmg.type}</p>
+                          <p className="font-bold text-white capitalize">{(dmg.zone || dmg.part || 'Carrosserie')} - {dmg.type}</p>
                           <p className="text-[11px] text-gray-400">Gravité : {dmg.severity} • {dmg.isPreExisting ? 'Préexistant' : 'Nouveau'}</p>
                         </div>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          dmg.severity === 'HEAVY' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+                          dmg.severity === 'HIGH' || dmg.severity === 'HEAVY' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
                         }`}>
                           {dmg.severity}
                         </span>

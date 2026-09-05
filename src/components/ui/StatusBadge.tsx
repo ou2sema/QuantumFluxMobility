@@ -21,6 +21,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
           bg: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400',
           dot: 'bg-emerald-400 animate-pulse',
         };
+      case 'RESERVED':
+        return {
+          label: 'RÉSERVÉ',
+          bg: 'bg-purple-500/15 border-purple-500/40 text-purple-400',
+          dot: 'bg-purple-400 animate-pulse',
+        };
       case 'RENTED':
         return {
           label: 'LOUÉ / EN COURS',

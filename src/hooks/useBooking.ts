@@ -35,11 +35,28 @@ export const useBooking = () => {
   }, [bookings]);
 
   // Check if a vehicle is available for given date range
-  const isVehicleAvailable = (vehicleId: string, startDate: string, endDate: string, excludeBookingId?: string): boolean => {
+  const isVehicleAvailable = (
+    vehicleId: string,
+    startDate: string,
+    endDate: string,
+    excludeBookingId?: string
+  ): boolean => {
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    if (!vehicle) return false;
+
+    // Hard block if vehicle is in maintenance or unavailable
+    if (vehicle.status === 'MAINTENANCE' || vehicle.status === 'UNAVAILABLE') {
+      return false;
+    }
+
     const start = new Date(startDate).getTime();
     const end = new Date(endDate).getTime();
 
-    const conflictingBookings = bookings.filter(b => {
+    if (isNaN(start) || isNaN(end) || start > end) {
+      return false;
+    }
+
+    const conflictingBookings = bookings.filter((b) => {
       if (b.vehicleId !== vehicleId) return false;
       if (excludeBookingId && b.id === excludeBookingId) return false;
       if (b.status === 'CANCELLED' || b.status === 'COMPLETED') return false;
@@ -50,7 +67,81 @@ export const useBooking = () => {
       return Math.max(start, bStart) <= Math.min(end, bEnd);
     });
 
-    return conflictingBookings.length === 0;
+    if (conflictingBookings.length > 0) {
+      return false;
+    }
+
+    // If vehicle status is currently RENTED or RESERVED and requested dates overlap with today
+    const today = new Date().toISOString().split('T')[0];
+    if ((vehicle.status === 'RENTED' || vehicle.status === 'RESERVED') && startDate <= today) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const getVehicleConflictInfo = (
+    vehicleId: string,
+    startDate?: string,
+    endDate?: string,
+    excludeBookingId?: string
+  ): { hasConflict: boolean; reason: string | null; status: Vehicle['status'] } => {
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    if (!vehicle) {
+      return { hasConflict: true, reason: 'Véhicule introuvable', status: 'UNAVAILABLE' };
+    }
+
+    if (vehicle.status === 'MAINTENANCE') {
+      return { hasConflict: true, reason: 'Véhicule en cours de maintenance technique', status: 'MAINTENANCE' };
+    }
+
+    if (vehicle.status === 'UNAVAILABLE') {
+      return { hasConflict: true, reason: 'Véhicule hors service / indisponible', status: 'UNAVAILABLE' };
+    }
+
+    if (startDate && endDate) {
+      const start = new Date(startDate).getTime();
+      const end = new Date(endDate).getTime();
+
+      const conflictingBooking = bookings.find((b) => {
+        if (b.vehicleId !== vehicleId) return false;
+        if (excludeBookingId && b.id === excludeBookingId) return false;
+        if (b.status === 'CANCELLED' || b.status === 'COMPLETED') return false;
+
+        const bStart = new Date(b.startDate).getTime();
+        const bEnd = new Date(b.endDate).getTime();
+
+        return Math.max(start, bStart) <= Math.min(end, bEnd);
+      });
+
+      if (conflictingBooking) {
+        const isCurrentActive = conflictingBooking.status === 'IN_PROGRESS';
+        return {
+          hasConflict: true,
+          reason: isCurrentActive
+            ? `Déjà loué en cours (restitution prévue le ${conflictingBooking.endDate})`
+            : `Déjà réservé pour cette période (${conflictingBooking.startDate} au ${conflictingBooking.endDate})`,
+          status: isCurrentActive ? 'RENTED' : 'RESERVED',
+        };
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      if (vehicle.status === 'RENTED' && startDate <= today) {
+        return { hasConflict: true, reason: 'Véhicule actuellement loué', status: 'RENTED' };
+      }
+      if (vehicle.status === 'RESERVED' && startDate <= today) {
+        return { hasConflict: true, reason: 'Véhicule déjà réservé pour aujourd’hui', status: 'RESERVED' };
+      }
+    } else {
+      if (vehicle.status === 'RENTED') {
+        return { hasConflict: true, reason: 'Véhicule actuellement loué', status: 'RENTED' };
+      }
+      if (vehicle.status === 'RESERVED') {
+        return { hasConflict: true, reason: 'Véhicule actuellement réservé', status: 'RESERVED' };
+      }
+    }
+
+    return { hasConflict: false, reason: null, status: vehicle.status };
   };
 
   const calculateBookingPricing = (
@@ -97,6 +188,7 @@ export const useBooking = () => {
     inProgressBookings,
     pendingBookings,
     isVehicleAvailable,
+    getVehicleConflictInfo,
     calculateBookingPricing,
     addBooking,
     updateBookingStatus,

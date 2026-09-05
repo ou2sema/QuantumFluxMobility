@@ -3,7 +3,7 @@ export type UserRole =
   | 'AGENT_COMPTOIR' 
   | 'AGENT_TECHNIQUE';
 
-export type VehicleStatus = 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'UNAVAILABLE';
+export type VehicleStatus = 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'UNAVAILABLE' | 'RESERVED';
 export type VehicleCategory = 'CITADINE' | 'COMPACTE' | 'BERLINE' | 'SUV' | 'UTILITAIRE' | 'PREMIUM' | 'ELECTRIQUE';
 export type FuelType = 'ESSENCE' | 'DIESEL' | 'HYBRIDE' | 'ELECTRIQUE';
 export type Transmission = 'MANUELLE' | 'AUTOMATIQUE';

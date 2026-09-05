@@ -123,10 +123,10 @@ export const QuickActionFAB: React.FC<QuickActionFABProps> = ({
                 onClick={() => handleAction(onOpenBookingWizard)}
                 className="min-h-[56px] px-5 rounded-xl bg-[#151B30] hover:bg-[#1C2542] text-white font-bold text-xs uppercase tracking-wider shadow-xl flex items-center gap-3 active:scale-95 transition-all border border-gray-700 cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
                   <CalendarPlus className="w-4 h-4 text-white" />
                 </div>
-                <span>Créer Réservation</span>
+                <span className="whitespace-nowrap">Nouvelle Réservation</span>
               </button>
             )}
 

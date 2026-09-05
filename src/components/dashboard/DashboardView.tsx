@@ -62,12 +62,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const { isManagerOrAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileOperationsFilter, setMobileOperationsFilter] = useState<'ALL' | 'CHECKIN' | 'CHECKOUT' | 'AVAILABLE' | 'FLEET'>('ALL');
-  const [fleetSubFilter, setFleetSubFilter] = useState<'ALL' | 'AVAILABLE' | 'RENTED' | 'MAINTENANCE'>('ALL');
+  const [fleetSubFilter, setFleetSubFilter] = useState<'ALL' | 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE'>('ALL');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
   // Fleet occupancy calculations
   const totalVehicles = vehicles.length;
   const rentedVehicles = vehicles.filter(v => v.status === 'RENTED').length;
+  const reservedVehicles = vehicles.filter(v => v.status === 'RESERVED').length;
   const availableVehicles = vehicles.filter(v => v.status === 'AVAILABLE').length;
   const maintenanceVehicles = vehicles.filter(v => v.status === 'MAINTENANCE').length;
   const occupancyRate = totalVehicles > 0 ? Math.round((rentedVehicles / totalVehicles) * 100) : 0;
@@ -83,6 +84,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     : [];
 
   const unreadAlertsCount = notifications.filter(n => !n.read).length;
+
+  // Real-time filtered vehicles list for Available & Fleet sections
+  const availableVehiclesList = vehicles
+    .filter(v => v.status === 'AVAILABLE')
+    .filter(v => {
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        v.plate.toLowerCase().includes(q) ||
+        v.brand.toLowerCase().includes(q) ||
+        v.model.toLowerCase().includes(q) ||
+        v.category.toLowerCase().includes(q)
+      );
+    });
+
+  const displayedFleetVehicles = vehicles
+    .filter(v => {
+      if (fleetSubFilter === 'ALL') return true;
+      return v.status === fleetSubFilter;
+    })
+    .filter(v => {
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        v.plate.toLowerCase().includes(q) ||
+        v.brand.toLowerCase().includes(q) ||
+        v.model.toLowerCase().includes(q) ||
+        v.category.toLowerCase().includes(q)
+      );
+    });
 
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-6 pb-32 flex flex-col gap-4 sm:gap-6 select-none">
@@ -113,13 +144,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={onOpenBookingWizard}
-            className="min-h-[50px] p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition-all cursor-pointer border border-blue-400/40"
+            className="min-h-[52px] p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition-all cursor-pointer border border-blue-400/40"
           >
             <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xs font-extrabold uppercase tracking-tight truncate">
-              + Nouvelle Résa
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-tight leading-tight whitespace-normal text-left sm:text-center">
+              Nouvelle Réservation
             </span>
           </button>
 
@@ -563,6 +594,305 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
           )}
+
+          {/* Available Vehicles Section */}
+          {mobileOperationsFilter === 'AVAILABLE' && (
+            <div className="bg-[#151B30] rounded-2xl border border-cyan-500/30 flex flex-col overflow-hidden shadow-xl">
+              <div className="p-4 sm:p-5 border-b border-gray-800 flex justify-between items-center bg-[#17203A]/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <h2 className="text-sm sm:text-base font-bold text-white">Véhicules Disponibles Immédiatement</h2>
+                </div>
+                <span className="px-2.5 py-0.5 bg-cyan-950/80 text-cyan-300 text-[11px] font-bold rounded-full border border-cyan-800/50 uppercase font-mono">
+                  {availableVehiclesList.length} Disponible(s)
+                </span>
+              </div>
+
+              <div className="p-3 sm:p-4 space-y-3">
+                {availableVehiclesList.length === 0 ? (
+                  <div className="p-8 text-center bg-[#0A0E1A] rounded-xl border border-gray-800">
+                    <Car className="w-8 h-8 text-gray-500 mx-auto mb-2 opacity-80" />
+                    <p className="text-sm font-bold text-white">Aucun véhicule disponible correspondant</p>
+                    <p className="text-xs text-gray-400 mt-1">Tous les véhicules sont actuellement en location ou en révision atelier.</p>
+                  </div>
+                ) : (
+                  availableVehiclesList.map(vehicle => (
+                    <div
+                      key={vehicle.id}
+                      className="bg-[#0A0E1A] p-3.5 sm:p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between border-l-4 border-emerald-500 border border-gray-800/80 gap-3 hover:border-gray-700 transition-all shadow-md"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-900 overflow-hidden border border-gray-800 flex-shrink-0">
+                          <img
+                            src={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80'}
+                            alt={`${vehicle.brand} ${vehicle.model}`}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 backdrop-blur-sm text-[9px] font-mono font-bold text-cyan-300 rounded">
+                            {vehicle.dailyRate}€/j
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-black text-cyan-300 border border-cyan-500/30">
+                              {vehicle.plate}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-800 text-gray-300">
+                              {vehicle.category}
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/50">
+                              Disponible
+                            </span>
+                          </div>
+
+                          <h3 className="font-black text-white text-base truncate mt-1">
+                            {vehicle.brand} {vehicle.model}
+                          </h3>
+
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5 flex-wrap">
+                            <span>{vehicle.mileage.toLocaleString()} km</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              {vehicle.fuelType === 'ELECTRIQUE' ? '⚡' : '⛽'} {vehicle.currentFuelLevel}% {vehicle.fuelType}
+                            </span>
+                            <span>•</span>
+                            <span>{vehicle.transmission === 'AUTOMATIQUE' ? 'BVA' : 'BVM'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-800/80">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedVehicle(vehicle)}
+                          className="min-h-[42px] px-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-gray-700 active:scale-95"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Fiche</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onOpenBookingWizard(vehicle.id)}
+                          className="min-h-[42px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/30 active:scale-95"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Réserver</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Full Fleet Section */}
+          {mobileOperationsFilter === 'FLEET' && (
+            <div className="bg-[#151B30] rounded-2xl border border-indigo-500/30 flex flex-col overflow-hidden shadow-xl">
+              <div className="p-4 sm:p-5 border-b border-gray-800 flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#17203A]/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" />
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold text-white">Parc Automobile de l'Agence</h2>
+                    <p className="text-xs text-gray-400">{displayedFleetVehicles.length} sur {totalVehicles} véhicules</p>
+                  </div>
+                </div>
+
+                {/* Sub-filters */}
+                <div className="flex items-center gap-1 p-1 bg-[#0A0E1A] rounded-xl border border-gray-800 text-[11px] font-mono overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setFleetSubFilter('ALL')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      fleetSubFilter === 'ALL'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Tous ({totalVehicles})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetSubFilter('AVAILABLE')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                      fleetSubFilter === 'AVAILABLE'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-gray-400 hover:text-emerald-400'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Dispo ({availableVehicles})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetSubFilter('RESERVED')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                      fleetSubFilter === 'RESERVED'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-gray-400 hover:text-purple-400'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                    Réservés ({reservedVehicles})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetSubFilter('RENTED')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                      fleetSubFilter === 'RENTED'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-400 hover:text-blue-400'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    Loués ({rentedVehicles})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetSubFilter('MAINTENANCE')}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                      fleetSubFilter === 'MAINTENANCE'
+                        ? 'bg-orange-600 text-white shadow-sm'
+                        : 'text-gray-400 hover:text-orange-400'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                    Atelier ({maintenanceVehicles})
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 sm:p-4 space-y-3">
+                {displayedFleetVehicles.length === 0 ? (
+                  <div className="p-8 text-center bg-[#0A0E1A] rounded-xl border border-gray-800">
+                    <Car className="w-8 h-8 text-gray-500 mx-auto mb-2 opacity-80" />
+                    <p className="text-sm font-bold text-white">Aucun véhicule dans cette catégorie</p>
+                  </div>
+                ) : (
+                  displayedFleetVehicles.map(vehicle => (
+                    <div
+                      key={vehicle.id}
+                      className={`bg-[#0A0E1A] p-3.5 sm:p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between border-l-4 border border-gray-800/80 gap-3 hover:border-gray-700 transition-all shadow-md ${
+                        vehicle.status === 'AVAILABLE'
+                          ? 'border-l-emerald-500 hover:border-l-emerald-400'
+                          : vehicle.status === 'RESERVED'
+                          ? 'border-l-purple-500 hover:border-l-purple-400'
+                          : vehicle.status === 'RENTED'
+                          ? 'border-l-blue-500 hover:border-l-blue-400'
+                          : 'border-l-orange-500 hover:border-l-orange-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-900 overflow-hidden border border-gray-800 flex-shrink-0">
+                          <img
+                            src={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80'}
+                            alt={`${vehicle.brand} ${vehicle.model}`}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 backdrop-blur-sm text-[9px] font-mono font-bold text-white rounded">
+                            {vehicle.dailyRate}€/j
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-black text-cyan-300 border border-cyan-500/30">
+                              {vehicle.plate}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-800 text-gray-300">
+                              {vehicle.category}
+                            </span>
+                            <StatusBadge status={vehicle.status} />
+                          </div>
+
+                          <h3 className="font-black text-white text-base truncate mt-1">
+                            {vehicle.brand} {vehicle.model}
+                          </h3>
+
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5 flex-wrap">
+                            <span>{vehicle.mileage.toLocaleString()} km</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              {vehicle.fuelType === 'ELECTRIQUE' ? '⚡' : '⛽'} {vehicle.currentFuelLevel}% {vehicle.fuelType}
+                            </span>
+                            <span>•</span>
+                            <span>{vehicle.transmission === 'AUTOMATIQUE' ? 'BVA' : 'BVM'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-800/80">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedVehicle(vehicle)}
+                          className="min-h-[42px] px-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-gray-700 active:scale-95"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Fiche</span>
+                        </button>
+
+                        {vehicle.status === 'AVAILABLE' ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenBookingWizard(vehicle.id)}
+                            className="min-h-[42px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/30 active:scale-95"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Réserver</span>
+                          </button>
+                        ) : vehicle.status === 'RESERVED' ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matchingBooking = bookings.find(b => b.vehicleId === vehicle.id && (b.status === 'CONFIRMED' || b.status === 'PENDING'));
+                              if (matchingBooking) {
+                                startCheckInFlow(matchingBooking);
+                              } else {
+                                setSelectedVehicle(vehicle);
+                              }
+                            }}
+                            className="min-h-[42px] px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-purple-600/30 active:scale-95"
+                          >
+                            <Key className="w-3.5 h-3.5" />
+                            <span>Départ / Clés</span>
+                          </button>
+                        ) : vehicle.status === 'RENTED' ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matchingBooking = inProgressBookings.find(b => b.vehicleId === vehicle.id) || bookings.find(b => b.vehicleId === vehicle.id && b.status === 'IN_PROGRESS');
+                              if (matchingBooking) {
+                                startCheckOutFlow(matchingBooking);
+                              } else {
+                                setSelectedVehicle(vehicle);
+                              }
+                            }}
+                            className="min-h-[42px] px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/30 active:scale-95"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Restituer</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('maintenance')}
+                            className="min-h-[42px] px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-orange-600/30 active:scale-95"
+                          >
+                            <Wrench className="w-3.5 h-3.5" />
+                            <span>Atelier</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column / Mobile Fleet Overview Panel */}
@@ -570,15 +900,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Big Hero Button: New Reservation (Desktop/Tablet) */}
           <button
             type="button"
-            onClick={onOpenBookingWizard}
+            onClick={() => onOpenBookingWizard()}
             className="w-full min-h-[72px] bg-blue-600 hover:bg-blue-500 rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-98 transition-all group cursor-pointer border border-blue-400/40 p-4"
           >
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-active:scale-90 transition-transform">
               <Calendar className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col text-left">
-              <span className="text-sm font-black uppercase tracking-tight text-white">
-                Créer une Réservation
+              <span className="text-sm font-black uppercase tracking-tight text-white whitespace-nowrap">
+                Nouvelle Réservation
               </span>
               <span className="text-[11px] text-blue-200">
                 Processus guidé en 3 étapes
@@ -603,11 +933,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="space-y-3">
-              <div>
+              <div
+                onClick={() => {
+                  setMobileOperationsFilter('AVAILABLE');
+                  setFleetSubFilter('AVAILABLE');
+                }}
+                className={`p-2 rounded-xl border transition-all cursor-pointer group ${
+                  mobileOperationsFilter === 'AVAILABLE'
+                    ? 'bg-emerald-950/40 border-emerald-500/40 ring-1 ring-emerald-500/30'
+                    : 'border-transparent hover:border-emerald-500/30 hover:bg-emerald-950/20'
+                }`}
+                title="Cliquer pour afficher les véhicules disponibles"
+              >
                 <div className="flex items-center justify-between mb-1 text-xs">
-                  <span className="text-gray-300 font-medium">Disponible</span>
+                  <span className="text-gray-300 font-medium group-hover:text-emerald-300 transition-colors">Disponible</span>
                   <div className="flex items-center gap-1.5 font-mono">
-                    <span className="font-bold text-white">{availableVehicles}</span>
+                    <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">{availableVehicles}</span>
                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
                   </div>
                 </div>
@@ -616,11 +957,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
 
-              <div>
+              <div
+                onClick={() => {
+                  setMobileOperationsFilter('FLEET');
+                  setFleetSubFilter('RENTED');
+                }}
+                className={`p-2 rounded-xl border transition-all cursor-pointer group ${
+                  mobileOperationsFilter === 'FLEET' && fleetSubFilter === 'RENTED'
+                    ? 'bg-blue-950/40 border-blue-500/40 ring-1 ring-blue-500/30'
+                    : 'border-transparent hover:border-blue-500/30 hover:bg-blue-950/20'
+                }`}
+                title="Cliquer pour afficher les véhicules en location"
+              >
                 <div className="flex items-center justify-between mb-1 text-xs">
-                  <span className="text-gray-300 font-medium">En Location / Sorti</span>
+                  <span className="text-gray-300 font-medium group-hover:text-blue-300 transition-colors">En Location / Sorti</span>
                   <div className="flex items-center gap-1.5 font-mono">
-                    <span className="font-bold text-blue-400">{rentedVehicles}</span>
+                    <span className="font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{rentedVehicles}</span>
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
                   </div>
                 </div>
@@ -629,11 +981,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
 
-              <div>
+              <div
+                onClick={() => {
+                  setMobileOperationsFilter('FLEET');
+                  setFleetSubFilter('MAINTENANCE');
+                }}
+                className={`p-2 rounded-xl border transition-all cursor-pointer group ${
+                  mobileOperationsFilter === 'FLEET' && fleetSubFilter === 'MAINTENANCE'
+                    ? 'bg-orange-950/40 border-orange-500/40 ring-1 ring-orange-500/30'
+                    : 'border-transparent hover:border-orange-500/30 hover:bg-orange-950/20'
+                }`}
+                title="Cliquer pour afficher les véhicules en atelier"
+              >
                 <div className="flex items-center justify-between mb-1 text-xs">
-                  <span className="text-gray-300 font-medium">En Atelier / Entretien</span>
+                  <span className="text-gray-300 font-medium group-hover:text-orange-300 transition-colors">En Atelier / Entretien</span>
                   <div className="flex items-center gap-1.5 font-mono">
-                    <span className="font-bold text-orange-400">{maintenanceVehicles}</span>
+                    <span className="font-bold text-orange-400 group-hover:text-orange-300 transition-colors">{maintenanceVehicles}</span>
                     <div className="w-2 h-2 rounded-full bg-orange-500" />
                   </div>
                 </div>
@@ -666,6 +1029,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </aside>
       </div>
+
+      {/* Vehicle Details Modal */}
+      {selectedVehicle && (
+        <VehicleDetailModal
+          vehicle={selectedVehicle}
+          onClose={() => setSelectedVehicle(null)}
+          onStartBooking={(vehicleId) => {
+            setSelectedVehicle(null);
+            onOpenBookingWizard(vehicleId);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -1,84 +1,123 @@
 {
-  "schema": {
-    "version": "1.0.0",
-    "collections": {
-      "vehicles": {
-        "description": "Vehicle fleet items, status, mileage, pricing, fuel and specs",
-        "fields": {
-          "id": { "type": "string", "required": true },
-          "name": { "type": "string", "required": true },
-          "brand": { "type": "string", "required": true },
-          "model": { "type": "string", "required": true },
-          "plate": { "type": "string", "required": true },
-          "category": { "type": "string", "required": true },
-          "status": { "type": "string", "required": true },
-          "mileage": { "type": "number", "required": true },
-          "fuelLevel": { "type": "number", "required": true },
-          "fuelType": { "type": "string", "required": true },
-          "dailyRate": { "type": "number", "required": true },
-          "damages": { "type": "array", "required": true }
-        }
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Fleet vehicle with technical specs, status, and pricing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "brand": { "type": "string", "maxLength": 64 },
+        "model": { "type": "string", "maxLength": 64 },
+        "plate": { "type": "string", "maxLength": 32 },
+        "category": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["AVAILABLE", "RENTED", "MAINTENANCE", "RESERVED"] },
+        "mileage": { "type": "number" },
+        "dailyRate": { "type": "number" },
+        "currentFuelLevel": { "type": "number" },
+        "fuelType": { "type": "string", "maxLength": 32 }
       },
-      "bookings": {
-        "description": "Vehicle rental reservations and agreements",
-        "fields": {
-          "id": { "type": "string", "required": true },
-          "bookingNumber": { "type": "string", "required": true },
-          "clientId": { "type": "string", "required": true },
-          "clientName": { "type": "string", "required": true },
-          "vehicleId": { "type": "string", "required": true },
-          "vehicleName": { "type": "string", "required": true },
-          "startDate": { "type": "string", "required": true },
-          "endDate": { "type": "string", "required": true },
-          "status": { "type": "string", "required": true },
-          "totalAmount": { "type": "number", "required": true },
-          "depositAmount": { "type": "number", "required": true }
-        }
+      "required": ["id", "brand", "model", "plate", "category", "status", "dailyRate"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Rental reservation and contract",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "bookingNumber": { "type": "string", "maxLength": 64 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "vehicleId": { "type": "string", "maxLength": 128 },
+        "startDate": { "type": "string", "maxLength": 64 },
+        "endDate": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] },
+        "totalAmount": { "type": "number" },
+        "depositAmount": { "type": "number" }
       },
-      "clients": {
-        "description": "Registered clients, contacts and driver license data",
-        "fields": {
-          "id": { "type": "string", "required": true },
-          "firstName": { "type": "string", "required": true },
-          "lastName": { "type": "string", "required": true },
-          "email": { "type": "string", "required": true },
-          "phone": { "type": "string", "required": true },
-          "drivingLicenseNumber": { "type": "string", "required": true },
-          "status": { "type": "string", "required": true }
-        }
+      "required": ["id", "bookingNumber", "clientId", "vehicleId", "startDate", "endDate", "status"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Registered agency customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "firstName": { "type": "string", "maxLength": 64 },
+        "lastName": { "type": "string", "maxLength": 64 },
+        "email": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "drivingLicenseNumber": { "type": "string", "maxLength": 64 }
       },
-      "maintenances": {
-        "description": "Maintenance, oil changes, brakes, and servicing records",
-        "fields": {
-          "id": { "type": "string", "required": true },
-          "vehicleId": { "type": "string", "required": true },
-          "vehiclePlate": { "type": "string", "required": true },
-          "type": { "type": "string", "required": true },
-          "title": { "type": "string", "required": true },
-          "cost": { "type": "number", "required": true },
-          "serviceDate": { "type": "string", "required": false },
-          "status": { "type": "string", "required": true }
-        }
+      "required": ["id", "firstName", "lastName", "email", "phone"]
+    },
+    "Maintenance": {
+      "title": "Maintenance",
+      "description": "Vehicle service and repair records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "vehicleId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "maxLength": 64 },
+        "cost": { "type": "number" },
+        "status": { "type": "string", "enum": ["SCHEDULED", "IN_PROGRESS", "COMPLETED"] }
       },
-      "appUsers": {
-        "description": "Agency staff accounts, roles, and PIN codes",
-        "fields": {
-          "id": { "type": "string", "required": true },
-          "name": { "type": "string", "required": true },
-          "email": { "type": "string", "required": true },
-          "role": { "type": "string", "required": true },
-          "pin": { "type": "string", "required": true }
-        }
+      "required": ["id", "vehicleId", "type", "cost", "status"]
+    },
+    "AppUser": {
+      "title": "AppUser",
+      "description": "Agency staff member profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 64 },
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["ADMIN", "MANAGER", "AGENT", "ACCOUNTANT", "MECHANIC"] }
       },
-      "agencies": {
-        "description": "Agency branch details and configuration",
-        "fields": {
-          "id": { "type": "string", "required": true },
-          "name": { "type": "string", "required": true },
-          "city": { "type": "string", "required": true },
-          "phone": { "type": "string", "required": true }
-        }
-      }
+      "required": ["id", "name", "email", "role"]
+    },
+    "Agency": {
+      "title": "Agency",
+      "description": "Agency branch location",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "city": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "city"]
+    }
+  },
+  "firestore": {
+    "/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "Agency vehicles"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Rental bookings"
+    },
+    "/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Agency clients"
+    },
+    "/maintenances/{maintenanceId}": {
+      "schema": { "$ref": "#/entities/Maintenance" },
+      "description": "Maintenance operations"
+    },
+    "/appUsers/{userId}": {
+      "schema": { "$ref": "#/entities/AppUser" },
+      "description": "Staff users"
+    },
+    "/agencies/{agencyId}": {
+      "schema": { "$ref": "#/entities/Agency" },
+      "description": "Agencies"
+    },
+    "/checkIns/{checkInId}": {
+      "schema": "CheckIn",
+      "description": "Vehicle return inspection reports"
+    },
+    "/checkOuts/{checkOutId}": {
+      "schema": "CheckOut",
+      "description": "Vehicle pickup inspection reports"
     }
   }
 }

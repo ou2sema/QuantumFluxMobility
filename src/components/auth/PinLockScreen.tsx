@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Delete,
   RotateCcw,
-  Sparkles,
   Wrench,
   Users
 } from 'lucide-react';
@@ -141,13 +140,6 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pin, selectedUser, mandatory, onCloseModal, isSuccess]);
-
-  const handleQuickFill = (u: User) => {
-    setSelectedUser(u);
-    const userPin = u.pinCode || '1111';
-    setPin(userPin);
-    submitPin(userPin, u.id);
-  };
 
   const roleMeta = ROLE_INFO[selectedUser.role] || ROLE_INFO.ADMIN;
   const RoleIcon = roleMeta.icon;
@@ -335,42 +327,17 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
           </button>
         </div>
 
-        {/* Quick Demo Access Chips for reviewers / testing */}
-        <div className="w-full pt-3 border-t border-gray-800 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-[11px] text-gray-400">
-            <span className="flex items-center gap-1 font-mono font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Codes PIN configurés :
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5 justify-center">
-            {users.map(u => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => handleQuickFill(u)}
-                className="px-2.5 py-1 rounded-lg bg-[#0A0E1A] hover:bg-gray-800 border border-gray-700/80 text-[10px] text-gray-300 hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
-                title={`Cliquer pour tester avec le profil ${u.name}`}
-              >
-                <span className="font-bold text-blue-400">{u.name.split(' ')[0]}:</span>
-                <span className="bg-gray-800 px-1.5 py-0.5 rounded font-black text-amber-300 border border-gray-700">
-                  {u.pinCode || '1111'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Close button ONLY if not mandatory (e.g. voluntary user switch) */}
         {!mandatory && isModal && onCloseModal && (
-          <button
-            type="button"
-            onClick={onCloseModal}
-            className="text-xs text-gray-400 hover:text-gray-200 transition-colors py-1 px-3 rounded-lg hover:bg-gray-800/50 cursor-pointer"
-          >
-            Annuler sans changer d'utilisateur
-          </button>
+          <div className="w-full pt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={onCloseModal}
+              className="text-xs text-gray-400 hover:text-gray-200 transition-colors py-1.5 px-4 rounded-lg hover:bg-gray-800/50 cursor-pointer"
+            >
+              Annuler sans changer d'utilisateur
+            </button>
+          </div>
         )}
       </div>
     </div>

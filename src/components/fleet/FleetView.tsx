@@ -105,6 +105,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ onStartBooking }) => {
         {[
           { id: 'ALL', label: 'Tous', count: vehicles.length },
           { id: 'AVAILABLE', label: 'Disponibles', count: vehicles.filter(v => v.status === 'AVAILABLE').length, color: 'text-green-400' },
+          { id: 'RESERVED', label: 'Réservés', count: vehicles.filter(v => v.status === 'RESERVED').length, color: 'text-purple-400' },
           { id: 'RENTED', label: 'Déjà Loués', count: vehicles.filter(v => v.status === 'RENTED').length, color: 'text-blue-400' },
           { id: 'MAINTENANCE', label: 'En Maintenance', count: vehicles.filter(v => v.status === 'MAINTENANCE').length, color: 'text-orange-400' },
           { id: 'UNAVAILABLE', label: 'Indisponibles', count: vehicles.filter(v => v.status === 'UNAVAILABLE').length, color: 'text-rose-400' },
@@ -208,7 +209,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ onStartBooking }) => {
                 <span>Changement rapide de statut :</span>
                 <span className="text-cyan-400 font-bold">1-tap</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1">
                 <button
                   type="button"
                   onClick={(e) => handleQuickStatusChange(e, vehicle.id, 'AVAILABLE')}
@@ -217,8 +218,21 @@ export const FleetView: React.FC<FleetViewProps> = ({ onStartBooking }) => {
                       ? 'bg-green-600 text-white shadow-sm font-black'
                       : 'bg-[#151B30] text-gray-400 hover:text-green-300 hover:bg-gray-800'
                   }`}
+                  title="Disponible"
                 >
                   Dispo
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleQuickStatusChange(e, vehicle.id, 'RESERVED')}
+                  className={`min-h-[38px] px-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer ${
+                    vehicle.status === 'RESERVED'
+                      ? 'bg-purple-600 text-white shadow-sm font-black'
+                      : 'bg-[#151B30] text-gray-400 hover:text-purple-300 hover:bg-gray-800'
+                  }`}
+                  title="Réservé"
+                >
+                  Réservé
                 </button>
                 <button
                   type="button"
@@ -228,6 +242,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ onStartBooking }) => {
                       ? 'bg-blue-600 text-white shadow-sm font-black'
                       : 'bg-[#151B30] text-gray-400 hover:text-blue-300 hover:bg-gray-800'
                   }`}
+                  title="Déjà Loué"
                 >
                   Loué
                 </button>
@@ -239,6 +254,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ onStartBooking }) => {
                       ? 'bg-orange-500 text-white shadow-sm font-black'
                       : 'bg-[#151B30] text-gray-400 hover:text-orange-300 hover:bg-gray-800'
                   }`}
+                  title="En Maintenance"
                 >
                   Maint.
                 </button>
@@ -250,6 +266,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ onStartBooking }) => {
                       ? 'bg-rose-600 text-white shadow-sm font-black'
                       : 'bg-[#151B30] text-gray-400 hover:text-rose-300 hover:bg-gray-800'
                   }`}
+                  title="Indisponible / Hors service"
                 >
                   Hors S.
                 </button>

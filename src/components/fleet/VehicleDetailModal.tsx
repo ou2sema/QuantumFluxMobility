@@ -167,9 +167,10 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   <span className="text-[11px] text-cyan-400 font-mono font-bold">Actuel : {vehicle.status}</span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {[
                     { id: 'AVAILABLE', label: 'Disponible', activeClass: 'bg-green-600 text-white border-green-400 font-black' },
+                    { id: 'RESERVED', label: 'Réservé', activeClass: 'bg-purple-600 text-white border-purple-400 font-black' },
                     { id: 'RENTED', label: 'Déjà Loué', activeClass: 'bg-blue-600 text-white border-blue-400 font-black' },
                     { id: 'MAINTENANCE', label: 'Maintenance', activeClass: 'bg-orange-500 text-white border-orange-400 font-black' },
                     { id: 'UNAVAILABLE', label: 'Indisponible', activeClass: 'bg-rose-600 text-white border-rose-400 font-black' },
@@ -358,7 +359,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             Fermer
           </TactileButton>
 
-          {vehicle.status === 'AVAILABLE' && onStartBooking && (
+          {vehicle.status === 'AVAILABLE' && onStartBooking ? (
             <TactileButton
               variant="primary"
               className="flex-1 font-black"
@@ -370,7 +371,22 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             >
               Louer ce Véhicule
             </TactileButton>
-          )}
+          ) : vehicle.status === 'RESERVED' ? (
+            <div className="flex-1 px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold text-center flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <span>Véhicule Réservé (Attente départ)</span>
+            </div>
+          ) : vehicle.status === 'RENTED' ? (
+            <div className="flex-1 px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-bold text-center flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-400" />
+              <span>Véhicule Actuellement Loué</span>
+            </div>
+          ) : vehicle.status === 'MAINTENANCE' ? (
+            <div className="flex-1 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold text-center flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Véhicule en Maintenance</span>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

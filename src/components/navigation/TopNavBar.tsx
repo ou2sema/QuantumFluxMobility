@@ -7,6 +7,8 @@ import { EditAgencyModal } from '../modals/EditAgencyModal';
 import { FirestoreSyncModal } from '../modals/FirestoreSyncModal';
 import { PinLockScreen } from '../auth/PinLockScreen';
 import { UserManagementModal } from '../users/UserManagementModal';
+import { PWAInstallButton } from '../pwa/PWAInstallButton';
+import { useTranslation } from 'react-i18next';
 import {
   Bell,
   Wifi,
@@ -26,12 +28,15 @@ import {
   Edit,
   Lock,
   KeyRound,
+  Camera,
   UserPlus,
   Users,
   Wrench,
   ShieldCheck,
   Database,
+  Globe,
 } from 'lucide-react';
+import { PhotoUploadCaptureModal } from '../ui/PhotoUploadCaptureModal';
 
 const ROLE_LABELS: Record<UserRole, { title: string; subtitle: string; color: string; icon: any }> = {
   ADMIN: {
@@ -74,9 +79,11 @@ export const TopNavBar: React.FC = () => {
     setSelectedBookingForCheckIn,
     setSelectedBookingForCheckOut,
     bookings,
+    updateUser,
   } = useApp();
 
   const { isAdmin, isAgentTechnique, isAgentComptoir } = useAuth();
+  const { t, i18n } = useTranslation();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showNotifDrawer, setShowNotifDrawer] = useState(false);
   const [showEditAgencyModal, setShowEditAgencyModal] = useState(false);
@@ -84,6 +91,7 @@ export const TopNavBar: React.FC = () => {
   const [pinModalTargetUser, setPinModalTargetUser] = useState<any>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showFirestoreModal, setShowFirestoreModal] = useState(false);
+  const [showProfilePhotoModal, setShowProfilePhotoModal] = useState(false);
 
   const handleRequestSwitchUser = (targetUser: any) => {
     if (targetUser.id === currentUser.id) {
@@ -125,11 +133,12 @@ export const TopNavBar: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-[#0D1224] border-b border-gray-800 px-3 sm:px-6 py-2.5 sm:py-3 pt-safe select-none">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
+      <header className="sticky top-0 z-40 bg-[#0D1224] border-b border-gray-800 px-2.5 sm:px-6 py-2 sm:py-3 pt-safe select-none">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand & Agency Selector */}
-          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
-            <QuantumFluxLogo variant="horizontal" size="md" showSubtitle={false} />
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-shrink">
+            <QuantumFluxLogo variant="horizontal" size="sm" showSubtitle={false} className="sm:hidden" />
+            <QuantumFluxLogo variant="horizontal" size="md" showSubtitle={false} className="hidden sm:flex" />
             <button
               type="button"
               onClick={() => setShowEditAgencyModal(true)}
@@ -157,7 +166,26 @@ export const TopNavBar: React.FC = () => {
           </div>
 
           {/* Right actions: Offline/Online, Notifications, Profile & Role Switcher */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* PWA Install Button */}
+            <PWAInstallButton className="hidden sm:flex" />
+
+            {/* Language Switcher */}
+            <button
+              type="button"
+              onClick={() => {
+                const newLang = i18n.language === 'fr' ? 'en' : 'fr';
+                i18n.changeLanguage(newLang);
+                localStorage.setItem('autofleet_language', newLang);
+              }}
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-2.5 rounded-xl bg-[#151B30] border border-gray-800 text-gray-300 hover:text-white flex items-center justify-center sm:gap-1.5 text-xs font-mono font-bold transition active:scale-95 cursor-pointer"
+              title="Changer de langue (FR/EN)"
+              aria-label="Changer de langue"
+            >
+              <Globe className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden sm:inline">{i18n.language?.toUpperCase() || 'FR'}</span>
+            </button>
+
             {/* Firestore Cloud Status Badge & Modal Trigger */}
             <button
               type="button"
@@ -169,63 +197,58 @@ export const TopNavBar: React.FC = () => {
               <span className="font-bold">Firestore Sync</span>
             </button>
 
-            {/* Offline Simulation Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                if (isOffline) {
+            {/* Offline Simulation Toggle - On mobile visible only if offline or active */}
+            {isOffline ? (
+              <button
+                type="button"
+                onClick={() => {
                   setIsOffline(false);
                   triggerSync();
-                } else {
-                  setIsOffline(true);
-                }
-              }}
-              className={`min-h-[40px] sm:min-h-[44px] px-2.5 sm:px-3 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
-                isOffline
-                  ? 'bg-orange-500/20 border-orange-500 text-orange-300 animate-pulse'
-                  : 'bg-[#151B30] border-gray-800 text-gray-300 hover:border-gray-700'
-              }`}
-              title="Basculer le mode Hors-Ligne"
-            >
-              {isOffline ? (
-                <>
-                  <WifiOff className="w-4 h-4 text-orange-400" />
-                  <span className="hidden md:inline">Hors-ligne</span>
-                  {pendingSyncCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded bg-orange-500 text-black font-black text-[10px]">
-                      {pendingSyncCount}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="hidden md:inline text-green-400 font-mono text-[11px]">En Ligne</span>
-                </>
-              )}
-            </button>
+                }}
+                className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border bg-orange-500/20 border-orange-500 text-orange-300 text-xs font-bold flex items-center gap-1 transition-all animate-pulse active:scale-95 cursor-pointer"
+                title="Mode Hors-Ligne actif. Cliquer pour reconnecter"
+              >
+                <WifiOff className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                <span className="hidden md:inline text-[11px]">Hors-ligne</span>
+                {pendingSyncCount > 0 && (
+                  <span className="px-1 py-0.2 rounded bg-orange-500 text-black font-black text-[9px]">
+                    {pendingSyncCount}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsOffline(true)}
+                className="hidden md:flex h-9 px-2.5 rounded-xl border bg-[#151B30] border-gray-800 text-gray-300 hover:border-gray-700 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                title="Basculer en mode Hors-Ligne (simulation)"
+              >
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-green-400 font-mono text-[11px]">En Ligne</span>
+              </button>
+            )}
 
             {/* Notifications Button */}
             <button
               type="button"
               onClick={() => setShowNotifDrawer(true)}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#151B30] border border-gray-800 text-gray-300 hover:text-white flex items-center justify-center relative active:scale-90 transition-transform cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#151B30] border border-gray-800 text-gray-300 hover:text-white flex items-center justify-center relative active:scale-90 transition-transform cursor-pointer"
               aria-label="Alertes et notifications"
             >
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Bell className="w-4 h-4 text-gray-300" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-600 text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center border-2 border-[#0D1224]">
-                  {unreadCount}
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center border border-[#0D1224]">
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Active User Profile & Role Switcher - ALWAYS fully visible on mobile */}
+            {/* Active User Profile & Role Switcher - ALWAYS visible on mobile */}
             <button
               id="top-profile-button"
               type="button"
               onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className="min-h-[40px] sm:min-h-[44px] pl-1.5 sm:pl-3 pr-1.5 sm:pr-2.5 py-1 rounded-xl bg-[#151B30] border border-gray-800 flex items-center gap-2 sm:gap-2.5 text-left active:scale-95 transition-transform hover:border-gray-700 flex-shrink-0 cursor-pointer"
+              className="h-8 sm:h-9 pl-1 sm:pl-2.5 pr-1.5 sm:pr-2 py-0.5 rounded-xl bg-[#151B30] border border-gray-800 flex items-center gap-1.5 sm:gap-2 text-left active:scale-95 transition-transform hover:border-gray-700 flex-shrink-0 cursor-pointer"
               title="Profil et changement d'utilisateur (PIN)"
               aria-label="Menu profil utilisateur"
             >
@@ -239,9 +262,9 @@ export const TopNavBar: React.FC = () => {
                 </span>
               </div>
 
-              {/* Profile Avatar Icon Container: Visible everywhere, styled with glowing status border */}
+              {/* Profile Avatar Icon */}
               <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-700 border-2 border-blue-500 overflow-hidden flex items-center justify-center font-bold text-white text-xs shadow-md">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 border border-blue-500 overflow-hidden flex items-center justify-center font-bold text-white text-[11px] shadow-sm">
                   {currentUser.avatarUrl ? (
                     <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
                   ) : (
@@ -249,10 +272,10 @@ export const TopNavBar: React.FC = () => {
                   )}
                 </div>
                 {/* Active online green dot */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#151B30]" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-[#151B30]" />
               </div>
 
-              <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+              <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
             </button>
           </div>
         </div>
@@ -271,20 +294,42 @@ export const TopNavBar: React.FC = () => {
             {/* User Profile Summary */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-800">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-700 border-2 border-blue-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
-                  {currentUser.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-                  ) : (
-                    currentUser.name.charAt(0)
-                  )}
+                {/* Clickable Avatar with Camera badge */}
+                <div
+                  onClick={() => setShowProfilePhotoModal(true)}
+                  className="relative group cursor-pointer"
+                  title="Changer ma photo de profil (caméra ou fichier)"
+                >
+                  <div className="w-13 h-13 rounded-full overflow-hidden bg-gray-700 border-2 border-blue-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-md">
+                    {currentUser.avatarUrl ? (
+                      <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser.name.charAt(0)
+                    )}
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                    <Camera className="w-4 h-4 text-blue-300" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white border-2 border-[#151B30] flex items-center justify-center shadow-xs">
+                    <Camera className="w-3 h-3" />
+                  </div>
                 </div>
+
                 <div className="min-w-0">
                   <h4 className="text-sm font-bold text-white truncate">{currentUser.name}</h4>
                   <p className="text-xs text-gray-400 truncate">{currentUser.email}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
+                  <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-0.2 rounded text-[10px] font-mono font-bold border ${currentRoleInfo.color}`}>
                       {currentRoleInfo.title}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowProfilePhotoModal(true)}
+                      className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer transition"
+                    >
+                      <Camera className="w-3 h-3" />
+                      <span>Photo</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -410,6 +455,34 @@ export const TopNavBar: React.FC = () => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Mobile Quick Settings: Agency & Cloud Sync */}
+            <div className="pt-2.5 border-t border-gray-800 flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRoleMenu(false);
+                  setShowEditAgencyModal(true);
+                }}
+                className="flex items-center gap-1.5 text-gray-300 hover:text-cyan-300 py-1 cursor-pointer"
+              >
+                <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-semibold truncate max-w-[160px]">{currentAgency.name}</span>
+                {isAdmin && <Edit className="w-3 h-3 text-cyan-400" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRoleMenu(false);
+                  setShowFirestoreModal(true);
+                }}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-mono cursor-pointer"
+              >
+                <Database className="w-3 h-3 text-amber-400" />
+                <span>Sync Cloud</span>
+              </button>
             </div>
           </div>
         </div>
@@ -605,6 +678,22 @@ export const TopNavBar: React.FC = () => {
       {/* Cloud Firestore Sync & Management Modal */}
       {showFirestoreModal && (
         <FirestoreSyncModal onClose={() => setShowFirestoreModal(false)} />
+      )}
+
+      {/* User Profile Photo Upload & Camera Modal */}
+      {showProfilePhotoModal && (
+        <PhotoUploadCaptureModal
+          isOpen={showProfilePhotoModal}
+          onClose={() => setShowProfilePhotoModal(false)}
+          onPhotoSelected={(newUrl) => {
+            updateUser(currentUser.id, { avatarUrl: newUrl });
+          }}
+          title="Modifier ma photo de profil"
+          subtitle="Prenez une photo en direct ou importez une photo depuis votre appareil"
+          aspectRatio="square"
+          defaultFacingMode="user"
+          currentPhotoUrl={currentUser.avatarUrl}
+        />
       )}
     </>
   );

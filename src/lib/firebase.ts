@@ -7,39 +7,123 @@ import {
   deleteDoc,
   onSnapshot,
   getDocs,
+  getDocFromServer,
   writeBatch,
   Firestore,
 } from 'firebase/firestore';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
+} from 'firebase/auth';
 import firebaseConfigData from '../../firebase-applet-config.json';
 
+// Resolve configuration: prefer VITE_ env variables if provided, fallback to firebase-applet-config.json
 export const firebaseConfig = {
-  apiKey: "AIzaSyArZnefFhplHOffkc2YvRmPFdDd1PzX_Ps",
-  authDomain: "quantumflux-mobility.firebaseapp.com",
-  projectId: "quantumflux-mobility",
-  storageBucket: "quantumflux-mobility.firebasestorage.app",
-  messagingSenderId: "711887714288",
-  appId: "1:711887714288:web:b1e3ab344e09da5f9d8f35",
-  measurementId: "G-SMEFG2VFPD"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigData.apiKey || "AIzaSyArZnefFhplHOffkc2YvRmPFdDd1PzX_Ps",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigData.authDomain || "quantumflux-mobility.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigData.projectId || "quantumflux-mobility",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigData.storageBucket || "quantumflux-mobility.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigData.messagingSenderId || "711887714288",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigData.appId || "1:711887714288:web:b1e3ab344e09da5f9d8f35",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfigData.measurementId || "G-SMEFG2VFPD",
 };
 
 // Initialize Firebase App
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with specific databaseId if provided
-let firestoreInstance: Firestore;
-try {
-  const customDbId = firebaseConfigData.firestoreDatabaseId;
-  if (customDbId && customDbId !== '(default)') {
-    firestoreInstance = getFirestore(app, customDbId);
-  } else {
-    firestoreInstance = getFirestore(app);
+// Initialize Firestore with database ID normalized to '(default)'
+const rawDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId;
+export const firestoreDatabaseId: string = (!rawDbId || rawDbId === 'default') ? '(default)' : rawDbId;
+export const db: Firestore = getFirestore(app, firestoreDatabaseId);
+
+// Initialize Firebase Auth & Providers
+export const auth = getAuth(app);
+export const googleAuthProvider = new GoogleAuthProvider();
+
+export async function signInWithGooglePopup(): Promise<FirebaseUser | null> {
+  try {
+    const result = await signInWithPopup(auth, googleAuthProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Firebase Google Sign-In Error:', error);
+    throw error;
   }
-} catch (err) {
-  console.warn('Error initializing Firestore with custom dbId, falling back to default:', err);
-  firestoreInstance = getFirestore(app);
 }
 
-export const db = firestoreInstance;
+export async function signOutFirebase(): Promise<void> {
+  await signOut(auth);
+}
+
+// ----------------------------------------------------
+// Error handling standard per Firebase skill
+// ----------------------------------------------------
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Security / Operation Error:', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+/**
+ * Validate connection to Firestore on boot as mandated in skill
+ */
+export async function testConnection(): Promise<boolean> {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.warn("Firestore client is offline or network unreachable.");
+    }
+    return false;
+  }
+}
+// Call validation
+testConnection().catch(() => {});
 
 /**
  * Subscribe in real-time to a Firestore collection
@@ -60,8 +144,11 @@ export function subscribeToCollection<T extends { id: string }>(
       onData(items);
     },
     (err) => {
-      console.error(`Firestore real-time subscription error on '${collectionName}':`, err);
-      if (onError) onError(err);
+      try {
+        handleFirestoreError(err, OperationType.LIST, collectionName);
+      } catch (wrapped) {
+        if (onError) onError(wrapped as Error);
+      }
     }
   );
 
@@ -78,11 +165,10 @@ export async function setFirestoreDoc<T extends Record<string, any>>(
 ): Promise<void> {
   try {
     const docRef = doc(db, collectionName, docId);
-    // Strip undefined values to avoid Firestore serialization errors
     const cleaned = JSON.parse(JSON.stringify(data));
     await setDoc(docRef, cleaned, { merge: true });
   } catch (error) {
-    console.error(`Error writing doc to ${collectionName}/${docId}:`, error);
+    handleFirestoreError(error, OperationType.WRITE, `${collectionName}/${docId}`);
   }
 }
 
@@ -94,7 +180,7 @@ export async function deleteFirestoreDoc(collectionName: string, docId: string):
     const docRef = doc(db, collectionName, docId);
     await deleteDoc(docRef);
   } catch (error) {
-    console.error(`Error deleting doc from ${collectionName}/${docId}:`, error);
+    handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${docId}`);
   }
 }
 
@@ -145,8 +231,7 @@ export async function pushAllCollectionsToFirestore(data: {
 }
 
 /**
- * Seeds collections only if Firestore has not been initialized yet (e.g. no bookings).
- * This prevents overwriting user modifications, checked-in bookings, or new records on app reload.
+ * Seeds collections only if Firestore has not been initialized yet.
  */
 export async function seedCollectionsIfEmpty(data: {
   vehicles: any[];
@@ -161,11 +246,9 @@ export async function seedCollectionsIfEmpty(data: {
   try {
     const bookingsSnap = await getDocs(collection(db, 'bookings'));
     if (!bookingsSnap.empty) {
-      // Data already present in Firestore: DO NOT OVERWRITE!
       return { success: true, seeded: false, count: bookingsSnap.size };
     }
 
-    // Firestore is empty: perform initial seeding
     const result = await pushAllCollectionsToFirestore(data);
     return { success: result.success, seeded: true, count: result.count, error: result.error };
   } catch (err: any) {

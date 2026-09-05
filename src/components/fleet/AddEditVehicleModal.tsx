@@ -13,6 +13,7 @@ import {
   Wrench,
   Key,
   Camera,
+  Upload,
   Image as ImageIcon,
   DollarSign,
   AlertTriangle,
@@ -20,6 +21,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
+import { PhotoUploadCaptureModal } from '../ui/PhotoUploadCaptureModal';
 
 interface AddEditVehicleModalProps {
   vehicleToEdit?: Vehicle | null;
@@ -114,6 +116,8 @@ export const AddEditVehicleModal: React.FC<AddEditVehicleModalProps> = ({
   );
   const [errorMsg, setErrorMsg] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photoModalFacing, setPhotoModalFacing] = useState<'environment' | 'user'>('environment');
 
   // Quick Preset Selection handler for Category
   const handleCategoryChange = (newCat: VehicleCategory) => {
@@ -236,7 +240,7 @@ export const AddEditVehicleModal: React.FC<AddEditVehicleModalProps> = ({
               <span className="text-[11px] text-gray-400 font-mono">Sélection rapide</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {[
                 {
                   id: 'AVAILABLE',
@@ -244,6 +248,13 @@ export const AddEditVehicleModal: React.FC<AddEditVehicleModalProps> = ({
                   desc: 'Prêt à louer',
                   activeClass: 'bg-green-600 text-white border-green-400 shadow-green-950/50',
                   dot: 'bg-green-400',
+                },
+                {
+                  id: 'RESERVED',
+                  label: 'Réservé',
+                  desc: 'Attente client',
+                  activeClass: 'bg-purple-600 text-white border-purple-400 shadow-purple-950/50',
+                  dot: 'bg-purple-400',
                 },
                 {
                   id: 'RENTED',
@@ -574,37 +585,86 @@ export const AddEditVehicleModal: React.FC<AddEditVehicleModalProps> = ({
 
           {/* Section 5: Photo du Véhicule */}
           <div className="bg-[#151B30] p-4 rounded-xl border border-gray-800 space-y-3">
-            <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-blue-400" />
-              Visuel du Véhicule
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-blue-400" />
+                Photo du Véhicule
+              </span>
+              <span className="text-[11px] text-cyan-400 font-semibold">
+                Depuis appareil ou caméra directe
+              </span>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-full sm:w-40 h-28 rounded-xl overflow-hidden bg-black/40 border border-gray-700 flex-shrink-0">
+              <div className="w-full sm:w-44 h-32 rounded-xl overflow-hidden bg-black/60 border border-gray-700 flex-shrink-0 relative group">
                 <img
                   src={imageUrl}
                   alt="Aperçu véhicule"
                   className="w-full h-full object-cover"
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoModalFacing('environment');
+                    setShowPhotoModal(true);
+                  }}
+                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity cursor-pointer p-2 text-center"
+                >
+                  <Camera className="w-6 h-6 mb-1 text-blue-400" />
+                  <span className="text-[11px] font-bold">Changer la photo</span>
+                </button>
               </div>
 
-              <div className="flex-1 w-full space-y-2">
-                <label className="block text-xs font-bold text-gray-400">
-                  Choisir parmi les modèles de la catégorie {category} :
-                </label>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {CATEGORY_IMAGE_PRESETS[category].map((presetUrl, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setImageUrl(presetUrl)}
-                      className={`w-14 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all cursor-pointer ${
-                        imageUrl === presetUrl ? 'border-blue-500 scale-105 shadow-md' : 'border-gray-800 opacity-60 hover:opacity-100'
-                      }`}
-                    >
-                      <img src={presetUrl} alt={`Preset ${idx}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+              <div className="flex-1 w-full space-y-3">
+                {/* Action Buttons: Direct Camera & Device Upload */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoModalFacing('environment');
+                      setShowPhotoModal(true);
+                    }}
+                    className="min-h-[46px] px-3.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-sm"
+                  >
+                    <Camera className="w-4 h-4 text-blue-400" />
+                    <span>Prendre en photo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoModalFacing('environment');
+                      setShowPhotoModal(true);
+                    }}
+                    className="min-h-[46px] px-3.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-sm"
+                  >
+                    <Upload className="w-4 h-4 text-cyan-400" />
+                    <span>Importer du fichier</span>
+                  </button>
+                </div>
+
+                {/* Preset suggestions */}
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 mb-1.5">
+                    Ou modèles prédéfinis ({category}) :
+                  </label>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {CATEGORY_IMAGE_PRESETS[category].map((presetUrl, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setImageUrl(presetUrl)}
+                        className={`w-14 h-11 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all cursor-pointer ${
+                          imageUrl === presetUrl
+                            ? 'border-blue-500 scale-105 shadow-md ring-1 ring-blue-400'
+                            : 'border-gray-800 opacity-60 hover:opacity-100'
+                        }`}
+                        title={`Modèle ${idx + 1}`}
+                      >
+                        <img src={presetUrl} alt={`Preset ${idx}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <input
@@ -612,7 +672,7 @@ export const AddEditVehicleModal: React.FC<AddEditVehicleModalProps> = ({
                   placeholder="Ou collez une URL d'image personnalisée..."
                   value={imageUrl}
                   onChange={e => setImageUrl(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg bg-[#0A0E1A] border border-gray-800 text-gray-300 text-xs font-mono focus:outline-none focus:border-blue-500"
+                  className="w-full h-9 px-3 rounded-lg bg-[#0A0E1A] border border-gray-800 text-gray-300 text-xs font-mono focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -713,6 +773,20 @@ export const AddEditVehicleModal: React.FC<AddEditVehicleModalProps> = ({
           </TactileButton>
         </div>
       </div>
+
+      {/* Unified Camera / Device Photo Picker Modal */}
+      {showPhotoModal && (
+        <PhotoUploadCaptureModal
+          isOpen={showPhotoModal}
+          onClose={() => setShowPhotoModal(false)}
+          onPhotoSelected={(url) => setImageUrl(url)}
+          title={`Photo du véhicule - ${brand || 'Nouveau véhicule'} ${model || ''}`}
+          subtitle="Prenez une photo en direct avec la caméra ou importez depuis vos fichiers"
+          aspectRatio="wide"
+          defaultFacingMode={photoModalFacing}
+          currentPhotoUrl={imageUrl}
+        />
+      )}
     </div>
   );
 };

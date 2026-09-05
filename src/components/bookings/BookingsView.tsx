@@ -51,7 +51,7 @@ export const BookingsView: React.FC<BookingsViewProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-4 pb-32 flex flex-col gap-4 select-none">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
             Planning & Réservations
@@ -63,8 +63,9 @@ export const BookingsView: React.FC<BookingsViewProps> = ({
           variant="primary"
           icon={Plus}
           onClick={onOpenBookingWizard}
+          className="whitespace-nowrap flex-shrink-0 self-start sm:self-auto"
         >
-          Nouvelle Résa
+          Nouvelle Réservation
         </TactileButton>
       </div>
 

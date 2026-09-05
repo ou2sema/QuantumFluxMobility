@@ -17,10 +17,13 @@ import {
   Sparkles,
   ShieldCheck,
   FileText,
-  UserPlus
+  UserPlus,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
 import { TactileInput } from '../ui/TactileInput';
+import { StatusBadge } from '../ui/StatusBadge';
 import confetti from 'canvas-confetti';
 
 interface BookingWizardModalProps {
@@ -33,7 +36,7 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
   preSelectedVehicleId,
 }) => {
   const { clients, vehicles, extras, currentAgency, addBooking, addClient } = useApp();
-  const { calculateBookingPricing, isVehicleAvailable } = useBooking();
+  const { calculateBookingPricing, isVehicleAvailable, getVehicleConflictInfo } = useBooking();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -48,7 +51,10 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
   const [newLicenseNumber, setNewLicenseNumber] = useState('');
 
   // Step 2: Vehicle, Dates & Extras State
-  const initialVehicle = vehicles.find(v => v.id === preSelectedVehicleId) || vehicles[0];
+  const initialVehicle =
+    vehicles.find(v => v.id === preSelectedVehicleId) ||
+    vehicles.find(v => v.status === 'AVAILABLE') ||
+    vehicles[0];
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle>(initialVehicle);
   const [startDate, setStartDate] = useState('2026-09-02');
   const [endDate, setEndDate] = useState('2026-09-05');
@@ -56,6 +62,7 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
   const [endTime, setEndTime] = useState('18:00');
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['ext-all-inclusive']);
   const [vehicleCategoryFilter, setVehicleCategoryFilter] = useState<string>('ALL');
+  const [showConflictingVehicles, setShowConflictingVehicles] = useState(false);
 
   // Step 3: Payment State
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('STRIPE_CARD');
@@ -84,6 +91,15 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
     if (vehicleCategoryFilter !== 'ALL' && v.category !== vehicleCategoryFilter) return false;
     return isVehicleAvailable(v.id, startDate, endDate);
   });
+
+  const conflictingVehiclesList = vehicles.filter(v => {
+    if (vehicleCategoryFilter !== 'ALL' && v.category !== vehicleCategoryFilter) return false;
+    return !isVehicleAvailable(v.id, startDate, endDate);
+  });
+
+  const currentVehicleConflict = selectedVehicle
+    ? getVehicleConflictInfo(selectedVehicle.id, startDate, endDate)
+    : { hasConflict: false, reason: '' };
 
   const handleCreateClientQuick = () => {
     if (!newFirstName || !newLastName || !newPhone) return;
@@ -348,6 +364,21 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
                 </div>
               </div>
 
+              {/* Conflict warning banner if selected vehicle is not available */}
+              {currentVehicleConflict.hasConflict && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-extrabold text-white text-xs">
+                      Conflit de réservation pour {selectedVehicle.brand} {selectedVehicle.model} ({selectedVehicle.plate})
+                    </span>
+                    <p className="text-rose-200">
+                      {currentVehicleConflict.reason}. Veuillez sélectionner un véhicule disponible dans la liste ci-dessous pour continuer.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Vehicle Selection with Availability Filter */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -369,43 +400,96 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
-                  {availableVehiclesList.map(veh => {
-                    const isSelected = selectedVehicle.id === veh.id;
-                    return (
-                      <div
-                        key={veh.id}
-                        onClick={() => setSelectedVehicle(veh)}
-                        className={`p-3 rounded-2xl border cursor-pointer flex items-center justify-between gap-2 transition-all active:scale-98 ${
-                          isSelected
-                            ? 'bg-indigo-950/50 border-indigo-500 shadow-md'
-                            : 'bg-[#131B2E] border-slate-800 hover:bg-slate-800'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={veh.images[0]}
-                            alt={veh.model}
-                            className="w-14 h-14 rounded-xl object-cover border border-slate-700"
-                          />
-                          <div>
-                            <p className="text-xs font-extrabold text-white">
-                              {veh.brand} {veh.model}
-                            </p>
-                            <span className="font-mono text-[11px] text-cyan-400 font-bold">
-                              {veh.plate}
-                            </span>
-                            <p className="text-xs font-black text-emerald-400 mt-0.5">
-                              {veh.dailyRate.toFixed(2)} DT / jour
-                            </p>
+                {availableVehiclesList.length === 0 ? (
+                  <div className="p-6 text-center bg-[#0A0E1A] rounded-2xl border border-dashed border-slate-800 text-slate-400 text-xs">
+                    <Car className="w-8 h-8 text-slate-500 mx-auto mb-2 opacity-60" />
+                    <p className="font-bold text-white">Aucun véhicule disponible sur ces dates / cette catégorie</p>
+                    <p className="mt-1 text-[11px] text-slate-400">Modifiez les dates ou le filtre de catégorie pour voir les disponibilités.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                    {availableVehiclesList.map(veh => {
+                      const isSelected = selectedVehicle.id === veh.id;
+                      return (
+                        <div
+                          key={veh.id}
+                          onClick={() => setSelectedVehicle(veh)}
+                          className={`p-3 rounded-2xl border cursor-pointer flex items-center justify-between gap-2 transition-all active:scale-98 ${
+                            isSelected
+                              ? 'bg-indigo-950/50 border-indigo-500 shadow-md'
+                              : 'bg-[#131B2E] border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={veh.images[0]}
+                              alt={veh.model}
+                              className="w-14 h-14 rounded-xl object-cover border border-slate-700"
+                            />
+                            <div>
+                              <p className="text-xs font-extrabold text-white">
+                                {veh.brand} {veh.model}
+                              </p>
+                              <span className="font-mono text-[11px] text-cyan-400 font-bold">
+                                {veh.plate}
+                              </span>
+                              <p className="text-xs font-black text-emerald-400 mt-0.5">
+                                {veh.dailyRate.toFixed(2)} DT / jour
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
-                        {isSelected && <Check className="w-5 h-5 text-indigo-400 flex-shrink-0" />}
+                          {isSelected && <Check className="w-5 h-5 text-indigo-400 flex-shrink-0" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Conflicting / Unavailable Vehicles Toggle */}
+                {conflictingVehiclesList.length > 0 && (
+                  <div className="pt-2 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => setShowConflictingVehicles(!showConflictingVehicles)}
+                      className="text-xs font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Info className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{showConflictingVehicles ? 'Masquer' : 'Voir'} les véhicules indisponibles / en conflit ({conflictingVehiclesList.length})</span>
+                    </button>
+
+                    {showConflictingVehicles && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                        {conflictingVehiclesList.map(veh => {
+                          const conflict = getVehicleConflictInfo(veh.id, startDate, endDate);
+                          return (
+                            <div
+                              key={veh.id}
+                              className="p-2.5 rounded-xl border border-slate-800/80 bg-[#0A0E1A]/80 flex items-center justify-between gap-2 opacity-75"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <img
+                                  src={veh.images[0]}
+                                  alt={veh.model}
+                                  className="w-10 h-10 rounded-lg object-cover grayscale"
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-300 truncate">
+                                    {veh.brand} {veh.model}
+                                  </p>
+                                  <p className="text-[10px] text-rose-400 font-medium truncate">
+                                    {conflict.reason || 'Indisponible'}
+                                  </p>
+                                </div>
+                              </div>
+                              <StatusBadge status={veh.status} size="small" />
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Extras Selector */}
@@ -591,10 +675,13 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
               className="flex-1"
               icon={ChevronRight}
               iconPosition="right"
-              disabled={step === 1 && !selectedClient}
+              disabled={
+                (step === 1 && !selectedClient) ||
+                (step === 2 && currentVehicleConflict.hasConflict)
+              }
               onClick={() => setStep(prev => (prev + 1) as any)}
             >
-              Suivant
+              {step === 2 && currentVehicleConflict.hasConflict ? 'Véhicule en conflit' : 'Suivant'}
             </TactileButton>
           ) : (
             <TactileButton

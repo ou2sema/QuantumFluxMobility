@@ -22,7 +22,7 @@ export const TactileButton: React.FC<TactileButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseClasses = 'tactile-btn font-bold uppercase tracking-wider inline-flex items-center justify-center rounded-xl transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 focus:outline-none select-none';
+  const baseClasses = 'tactile-btn font-bold uppercase tracking-wider inline-flex items-center justify-center whitespace-nowrap rounded-xl transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 focus:outline-none select-none';
 
   // Strict Rule: Minimum 56px height for all buttons
   const sizeClasses = {

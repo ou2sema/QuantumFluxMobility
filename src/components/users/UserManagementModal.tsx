@@ -13,14 +13,15 @@ import {
   Edit2,
   Check,
   AlertCircle,
-  Eye,
-  EyeOff,
   Phone,
   Mail,
   Shield,
-  BadgeCheck
+  BadgeCheck,
+  Camera,
+  Upload,
 } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
+import { PhotoUploadCaptureModal } from '../ui/PhotoUploadCaptureModal';
 
 interface UserManagementModalProps {
   onClose: () => void;
@@ -56,7 +57,9 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
 
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [revealedPins, setRevealedPins] = useState<Record<string, boolean>>({});
+  const [newUserAvatar, setNewUserAvatar] = useState<string>('');
+  const [targetPhotoUserId, setTargetPhotoUserId] = useState<string | null>(null);
+  const [showUserPhotoModal, setShowUserPhotoModal] = useState(false);
 
   // Add User Form State
   const [name, setName] = useState('');
@@ -69,10 +72,6 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
 
   // Edit PIN State
   const [tempPin, setTempPin] = useState('');
-
-  const togglePinReveal = (userId: string) => {
-    setRevealedPins(prev => ({ ...prev, [userId]: !prev[userId] }));
-  };
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +96,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
       pinCode: pinCode.trim(),
       agencyId: currentAgency.id,
       jobTitle: jobTitle.trim() || ROLE_OPTIONS.find(r => r.role === role)?.title,
+      avatarUrl: newUserAvatar.trim() || undefined,
       active: true,
     });
 
@@ -106,6 +106,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
     setPhone('');
     setPinCode('');
     setJobTitle('');
+    setNewUserAvatar('');
     setFormError(null);
     setIsAddingUser(false);
   };
@@ -202,6 +203,63 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
                 </div>
               )}
 
+              {/* Profile Photo Selector for New User */}
+              <div className="flex items-center gap-3.5 p-3 rounded-xl bg-[#0A0E1A] border border-gray-800">
+                <div
+                  onClick={() => {
+                    setTargetPhotoUserId('NEW_USER');
+                    setShowUserPhotoModal(true);
+                  }}
+                  className="relative group cursor-pointer flex-shrink-0"
+                  title="Ajouter une photo de profil (caméra ou appareil)"
+                >
+                  <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-800 border-2 border-dashed border-blue-500/60 flex items-center justify-center text-white font-bold text-base shadow-sm">
+                    {newUserAvatar ? (
+                      <img src={newUserAvatar} alt="Photo" className="w-full h-full object-cover" />
+                    ) : name.trim() ? (
+                      name.trim().charAt(0).toUpperCase()
+                    ) : (
+                      <Users className="w-6 h-6 text-gray-500" />
+                    )}
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                    <Camera className="w-4 h-4 text-blue-300" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                    <Camera className="w-3 h-3" />
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <span className="text-xs font-bold text-white block">Photo de profil du collaborateur</span>
+                  <span className="text-[11px] text-gray-400 block mb-1.5">
+                    {newUserAvatar ? 'Photo configurée avec succès' : 'Facultatif - caméra ou fichier'}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetPhotoUserId('NEW_USER');
+                        setShowUserPhotoModal(true);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{newUserAvatar ? 'Changer la photo' : 'Prendre ou importer'}</span>
+                    </button>
+                    {newUserAvatar && (
+                      <button
+                        type="button"
+                        onClick={() => setNewUserAvatar('')}
+                        className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs cursor-pointer"
+                      >
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-300 font-medium">Nom complet *</label>
@@ -218,13 +276,13 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-300 font-medium">Code PIN d'accès (4 chiffres) *</label>
                   <input
-                    type="text"
+                    type="password"
                     required
                     maxLength={6}
-                    placeholder="Ex: 4444"
+                    placeholder="••••"
                     value={pinCode}
                     onChange={e => setPinCode(e.target.value.replace(/\D/g, ''))}
-                    className="h-10 px-3 rounded-xl bg-[#0A0E1A] border border-gray-700 text-white font-mono font-bold text-sm tracking-widest focus:border-blue-500 focus:outline-none"
+                    className="h-10 px-3 rounded-xl bg-[#0A0E1A] border border-gray-700 text-white font-mono font-bold text-base tracking-widest focus:border-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -316,13 +374,30 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
                   className="p-3.5 rounded-2xl bg-[#151B30] border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-gray-700 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 border-2 border-blue-500/60 flex items-center justify-center font-bold text-white text-xs flex-shrink-0">
-                      {u.avatarUrl ? (
-                        <img src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" />
-                      ) : (
-                        u.name.charAt(0)
-                      )}
+                    {/* Clickable user avatar to update photo */}
+                    <div
+                      onClick={() => {
+                        setTargetPhotoUserId(u.id);
+                        setShowUserPhotoModal(true);
+                      }}
+                      className="relative group cursor-pointer flex-shrink-0"
+                      title="Changer la photo de profil (caméra ou fichier)"
+                    >
+                      <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-700 border-2 border-blue-500/60 flex items-center justify-center font-bold text-white text-xs shadow-xs">
+                        {u.avatarUrl ? (
+                          <img src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" />
+                        ) : (
+                          u.name.charAt(0)
+                        )}
+                      </div>
+                      <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                        <Camera className="w-4 h-4 text-blue-300" />
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                        <Camera className="w-2.5 h-2.5" />
+                      </div>
                     </div>
+
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-white truncate">{u.name}</span>
@@ -354,59 +429,56 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
                       <span>{meta.title}</span>
                     </span>
 
-                    {/* PIN Code Box */}
-                    <div className="flex items-center gap-1.5 bg-[#0A0E1A] px-2 py-1 rounded-xl border border-gray-800">
-                      <KeyRound className="w-3 h-3 text-amber-400" />
+                    {/* PIN Code Security Box - Strictly Masked */}
+                    <div className="flex items-center gap-2 bg-[#0A0E1A] px-2.5 py-1 rounded-xl border border-gray-800">
+                      <KeyRound className="w-3.5 h-3.5 text-gray-400" />
                       {isEditingThisPin ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <input
-                            type="text"
+                            type="password"
                             maxLength={6}
                             value={tempPin}
                             onChange={e => setTempPin(e.target.value.replace(/\D/g, ''))}
-                            placeholder="PIN"
-                            className="w-16 h-6 px-1 text-center font-mono font-bold text-xs bg-gray-900 border border-blue-500 text-amber-300 rounded focus:outline-none"
+                            placeholder="Nouveau PIN"
+                            className="w-24 h-6 px-1.5 text-center font-mono font-bold text-xs bg-gray-900 border border-blue-500 text-white rounded focus:outline-none tracking-widest"
                             autoFocus
                           />
                           <button
                             type="button"
                             onClick={() => handleSavePin(u.id)}
-                            className="p-1 rounded bg-blue-600 text-white hover:bg-blue-500"
-                            title="Sauvegarder PIN"
+                            className="p-1 rounded bg-blue-600 text-white hover:bg-blue-500 cursor-pointer"
+                            title="Sauvegarder le code PIN"
                           >
                             <Check className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => setEditingUserId(null)}
-                            className="p-1 rounded bg-gray-800 text-gray-400 hover:text-white"
+                            onClick={() => {
+                              setEditingUserId(null);
+                              setTempPin('');
+                            }}
+                            className="p-1 rounded bg-gray-800 text-gray-400 hover:text-white cursor-pointer"
+                            title="Annuler"
                           >
                             <X className="w-3 h-3" />
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs font-bold text-amber-300">
-                            {revealedPins[u.id] ? u.pinCode || '1111' : '••••'}
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-gray-400 tracking-widest">
+                            ••••
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => togglePinReveal(u.id)}
-                            className="text-gray-500 hover:text-gray-300"
-                            title={revealedPins[u.id] ? 'Masquer' : 'Afficher PIN'}
-                          >
-                            {revealedPins[u.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                          </button>
                           <button
                             type="button"
                             onClick={() => {
                               setEditingUserId(u.id);
-                              setTempPin(u.pinCode || '');
+                              setTempPin('');
                             }}
-                            className="text-gray-500 hover:text-blue-400 ml-0.5"
-                            title="Changer le PIN"
+                            className="text-gray-400 hover:text-blue-400 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition"
+                            title="Modifier le code PIN"
                           >
                             <Edit2 className="w-3 h-3" />
+                            <span>Modifier</span>
                           </button>
                         </div>
                       )}
@@ -441,6 +513,37 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
           </TactileButton>
         </div>
       </div>
+
+      {/* Profile Photo Upload & Capture Modal */}
+      {showUserPhotoModal && (
+        <PhotoUploadCaptureModal
+          isOpen={showUserPhotoModal}
+          onClose={() => {
+            setShowUserPhotoModal(false);
+            setTargetPhotoUserId(null);
+          }}
+          onPhotoSelected={(newUrl) => {
+            if (targetPhotoUserId === 'NEW_USER') {
+              setNewUserAvatar(newUrl);
+            } else if (targetPhotoUserId) {
+              updateUser(targetPhotoUserId, { avatarUrl: newUrl });
+            }
+          }}
+          title={
+            targetPhotoUserId === 'NEW_USER'
+              ? 'Photo du nouveau collaborateur'
+              : `Photo de ${users.find(u => u.id === targetPhotoUserId)?.name || 'l\'utilisateur'}`
+          }
+          subtitle="Prenez une photo en direct ou importez une photo depuis votre appareil"
+          aspectRatio="square"
+          defaultFacingMode="user"
+          currentPhotoUrl={
+            targetPhotoUserId === 'NEW_USER'
+              ? newUserAvatar
+              : users.find(u => u.id === targetPhotoUserId)?.avatarUrl
+          }
+        />
+      )}
     </div>
   );
 };

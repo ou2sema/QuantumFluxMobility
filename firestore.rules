@@ -1,31 +1,123 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /vehicles/{vehicleId} {
-      allow read, write: if true;
-    }
-    match /bookings/{bookingId} {
-      allow read, write: if true;
-    }
-    match /clients/{clientId} {
-      allow read, write: if true;
-    }
-    match /maintenances/{maintenanceId} {
-      allow read, write: if true;
-    }
-    match /appUsers/{userId} {
-      allow read, write: if true;
-    }
-    match /checkIns/{checkInId} {
-      allow read, write: if true;
-    }
-    match /checkOuts/{checkOutId} {
-      allow read, write: if true;
-    }
-    match /agencies/{agencyId} {
-      allow read, write: if true;
-    }
+
+    // Global Safety Net: Default Deny
     match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Admin authorization: bootstrapped admin or document in admins
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'ou2sema@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Staff access: authenticated users or admin
+    function isStaff() {
+      return isSignedIn() || isAdmin();
+    }
+
+    // Vehicles Collection
+    match /vehicles/{vehicleId} {
+      allow read: if true; // Public read for fleet showcase & client portal
+      allow create, update: if isValidId(vehicleId) && (
+        isStaff() ||
+        (incoming().brand is string && incoming().model is string && incoming().plate is string)
+      );
+      allow delete: if isValidId(vehicleId) && (isAdmin() || isSignedIn());
+    }
+
+    // Bookings Collection
+    match /bookings/{bookingId} {
+      allow read: if true; // Agency staff & portal lookup
+      allow create, update: if isValidId(bookingId) && (
+        isStaff() ||
+        (incoming().bookingNumber is string && incoming().clientId is string && incoming().vehicleId is string)
+      );
+      allow delete: if isValidId(bookingId) && (isAdmin() || isSignedIn());
+    }
+
+    // Clients Collection
+    match /clients/{clientId} {
+      allow read: if true;
+      allow create, update: if isValidId(clientId) && (
+        isStaff() ||
+        (incoming().firstName is string && incoming().lastName is string && incoming().email is string)
+      );
+      allow delete: if isValidId(clientId) && (isAdmin() || isSignedIn());
+    }
+
+    // Maintenances Collection
+    match /maintenances/{maintenanceId} {
+      allow read: if true;
+      allow create, update: if isValidId(maintenanceId) && (
+        isStaff() ||
+        (incoming().vehicleId is string && incoming().type is string)
+      );
+      allow delete: if isValidId(maintenanceId) && (isAdmin() || isSignedIn());
+    }
+
+    // App Users Collection (Staff profiles)
+    match /appUsers/{userId} {
+      allow read: if true;
+      allow create, update: if isValidId(userId) && (
+        isAdmin() ||
+        (incoming().name is string && incoming().email is string && incoming().role is string)
+      );
+      allow delete: if isValidId(userId) && (isAdmin() || isSignedIn());
+    }
+
+    // Check-Ins & Check-Outs (Inspections)
+    match /checkIns/{checkInId} {
+      allow read: if true;
+      allow create, update: if isValidId(checkInId) && (
+        isStaff() ||
+        (incoming().bookingId is string && incoming().vehicleId is string)
+      );
+      allow delete: if isValidId(checkInId) && (isAdmin() || isSignedIn());
+    }
+
+    match /checkOuts/{checkOutId} {
+      allow read: if true;
+      allow create, update: if isValidId(checkOutId) && (
+        isStaff() ||
+        (incoming().bookingId is string && incoming().vehicleId is string)
+      );
+      allow delete: if isValidId(checkOutId) && (isAdmin() || isSignedIn());
+    }
+
+    // Agencies Collection
+    match /agencies/{agencyId} {
+      allow read: if true;
+      allow create, update: if isValidId(agencyId) && (
+        isAdmin() || isStaff() ||
+        (incoming().name is string && incoming().city is string)
+      );
+      allow delete: if isValidId(agencyId) && (isAdmin() || isSignedIn());
+    }
+
+    // Connection Test Document
+    match /test/{testId} {
       allow read, write: if true;
     }
   }
