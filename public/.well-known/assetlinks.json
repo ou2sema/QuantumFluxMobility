@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.quantumflux.mobility",
+      "package_name": "app.vercel.quantum_flux_mobility.twa",
       "sha256_cert_fingerprints": [
-        "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"
+        "CE:02:39:99:01:A1:5A:B2:9A:AE:FF:95:3B:55:6D:A3:E7:0B:93:F2:71:64:B0:98:53:6B:A0:76:FE:15:54:45"
       ]
     }
   }
