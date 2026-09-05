@@ -4,7 +4,7 @@
       "source": "/((?!assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
-  ],
+  ], 
   "headers": [
     {
       "source": "/.well-known/assetlinks.json",
