@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useCheckIn } from '../../hooks/useCheckIn';
 import { Booking, Vehicle } from '../../types';
@@ -59,10 +60,14 @@ export const CheckInFlow: React.FC<CheckInFlowProps> = ({ onCancel, onSuccess })
     performCheckIn,
   } = useCheckIn();
 
-  // If no booking was preselected, pick the first confirmed booking
+  const { bookingId } = useParams<{ bookingId?: string }>();
+
+  // If no booking was preselected, check URL params or pick the first confirmed booking
   const activeBooking =
     selectedBookingForCheckIn ||
-    bookings.find(b => b.status === 'CONFIRMED');
+    (bookingId ? bookings.find(b => b.id === bookingId || b.bookingNumber === bookingId) : undefined) ||
+    bookings.find(b => b.status === 'CONFIRMED') ||
+    bookings.find(b => b.status === 'PENDING');
 
   const activeVehicle = activeBooking
     ? vehicles.find(v => v.id === activeBooking.vehicleId) || vehicles[0]

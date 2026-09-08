@@ -11,6 +11,8 @@ interface BookingContextType {
   bookings: Booking[];
   addBooking: (bookingData: Omit<Booking, 'id' | 'bookingNumber' | 'createdAt'>) => Booking;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
+  checkAndAutoUpdateBooking: (booking: Booking) => { updated: boolean; booking: Booking; reason?: 'AUTO_CANCELLED' | 'AUTO_COMPLETED' };
+  checkAllBookingsLifecycle: () => number;
   selectedBookingForCheckIn: Booking | null;
   setSelectedBookingForCheckIn: (booking: Booking | null) => void;
   selectedBookingForCheckOut: Booking | null;
@@ -123,10 +125,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       );
       setFirestoreDoc('bookings', bookingId, { status }).catch(() => {});
 
-      if (status === 'CANCELLED') {
-        const targetBk = bookings.find((b) => b.id === bookingId);
-        if (targetBk) {
+      const targetBk = bookings.find((b) => b.id === bookingId);
+      if (targetBk) {
+        if (status === 'CANCELLED' || status === 'COMPLETED') {
           updateVehicleStatus(targetBk.vehicleId, 'AVAILABLE');
+        } else if (status === 'IN_PROGRESS') {
+          updateVehicleStatus(targetBk.vehicleId, 'RENTED');
+        } else if (status === 'CONFIRMED') {
+          updateVehicleStatus(targetBk.vehicleId, 'RESERVED');
         }
       }
 
@@ -134,6 +140,83 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     [toast, bookings, updateVehicleStatus]
   );
+
+  // Automatically process booking lifecycle rules:
+  // 1. If start day passed and client didn't check in -> auto-cancel & vehicle AVAILABLE
+  // 2. If end day arrives/passed -> auto-complete & vehicle AVAILABLE
+  const checkAndAutoUpdateBooking = useCallback(
+    (booking: Booking): { updated: boolean; booking: Booking; reason?: 'AUTO_CANCELLED' | 'AUTO_COMPLETED' } => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Rule 1: Day passed and client didn't proceed with check-in
+      if ((booking.status === 'CONFIRMED' || booking.status === 'PENDING') && booking.startDate < today) {
+        const updatedBooking: Booking = { ...booking, status: 'CANCELLED' };
+
+        setBookings((prev) =>
+          prev.map((b) => (b.id === booking.id ? updatedBooking : b))
+        );
+        setFirestoreDoc('bookings', booking.id, { status: 'CANCELLED' }).catch(() => {});
+        updateVehicleStatus(booking.vehicleId, 'AVAILABLE');
+
+        toast.warning(
+          `Réservation ${booking.bookingNumber} annulée automatiquement : départ dépassé sans check-in. Véhicule ${booking.vehicleName || ''} libéré.`
+        );
+
+        return { updated: true, booking: updatedBooking, reason: 'AUTO_CANCELLED' };
+      }
+
+      // Rule 2: End day comes/passed and reservation is in progress
+      if (booking.status === 'IN_PROGRESS' && booking.endDate <= today) {
+        const updatedBooking: Booking = { ...booking, status: 'COMPLETED' };
+
+        setBookings((prev) =>
+          prev.map((b) => (b.id === booking.id ? updatedBooking : b))
+        );
+        setFirestoreDoc('bookings', booking.id, { status: 'COMPLETED' }).catch(() => {});
+        updateVehicleStatus(booking.vehicleId, 'AVAILABLE');
+
+        toast.success(
+          `Réservation ${booking.bookingNumber} clôturée automatiquement : fin de contrat atteinte. Véhicule ${booking.vehicleName || ''} libéré.`
+        );
+
+        return { updated: true, booking: updatedBooking, reason: 'AUTO_COMPLETED' };
+      }
+
+      return { updated: false, booking };
+    },
+    [toast, updateVehicleStatus]
+  );
+
+  // Batch sweep for all bookings in current state
+  const checkAllBookingsLifecycle = useCallback((): number => {
+    const today = new Date().toISOString().split('T')[0];
+    let changedCount = 0;
+
+    setBookings((prev) => {
+      let hasChanges = false;
+      const nextBookings = prev.map((b) => {
+        if ((b.status === 'CONFIRMED' || b.status === 'PENDING') && b.startDate < today) {
+          hasChanges = true;
+          changedCount++;
+          setFirestoreDoc('bookings', b.id, { status: 'CANCELLED' }).catch(() => {});
+          updateVehicleStatus(b.vehicleId, 'AVAILABLE');
+          return { ...b, status: 'CANCELLED' as const };
+        }
+        if (b.status === 'IN_PROGRESS' && b.endDate <= today) {
+          hasChanges = true;
+          changedCount++;
+          setFirestoreDoc('bookings', b.id, { status: 'COMPLETED' }).catch(() => {});
+          updateVehicleStatus(b.vehicleId, 'AVAILABLE');
+          return { ...b, status: 'COMPLETED' as const };
+        }
+        return b;
+      });
+
+      return hasChanges ? nextBookings : prev;
+    });
+
+    return changedCount;
+  }, [updateVehicleStatus]);
 
   const completeCheckIn = useCallback(
     (checkInData: Omit<CheckIn, 'id' | 'timestamp'>): CheckIn => {
@@ -206,7 +289,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const invoiceItems = [
         {
-          description: `Location véhicule ${vehicle?.brand} ${vehicle?.model} (${booking.durationDays} jours x ${booking.dailyRate.toFixed(2)} €)`,
+          description: `Location véhicule ${vehicle?.brand} ${vehicle?.model} (${booking.durationDays} jours x ${booking.dailyRate.toFixed(2)} DT)`,
           quantity: booking.durationDays,
           unitPrice: booking.dailyRate,
           total: booking.rentalSubtotal,
@@ -255,6 +338,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         bookings,
         addBooking,
         updateBookingStatus,
+        checkAndAutoUpdateBooking,
+        checkAllBookingsLifecycle,
         selectedBookingForCheckIn,
         setSelectedBookingForCheckIn,
         selectedBookingForCheckOut,

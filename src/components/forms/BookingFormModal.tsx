@@ -1,16 +1,32 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { bookingFormSchema, BookingFormData } from '../../schemas';
 import { useApp } from '../../context/AppContext';
-import { X, Calendar, Shield, MapPin, DollarSign, Car, User, AlertCircle } from 'lucide-react';
-import { Vehicle } from '../../types';
+import {
+  X,
+  Calendar,
+  Shield,
+  MapPin,
+  DollarSign,
+  Car,
+  User,
+  AlertCircle,
+  UserPlus,
+  Plus,
+  CheckCircle2,
+  Sparkles,
+  Check,
+} from 'lucide-react';
+import { Vehicle, Client } from '../../types';
+import { NewClientModal } from '../clients/NewClientModal';
 
 interface BookingFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedVehicleId?: string;
   preselectedStartDate?: string;
+  preselectedClientId?: string;
 }
 
 export const BookingFormModal: React.FC<BookingFormModalProps> = ({
@@ -18,8 +34,9 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
   onClose,
   preselectedVehicleId,
   preselectedStartDate,
+  preselectedClientId,
 }) => {
-  const { vehicles, clients, addBooking, currentAgency } = useApp();
+  const { vehicles, clients, addBooking, addClient, currentAgency } = useApp();
 
   const availableVehicles = useMemo(() => {
     return [...vehicles].sort((a, b) => {
@@ -49,7 +66,7 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
       vehicleId: preselectedVehicleId || availableVehicles[0]?.id || '',
-      clientId: clients[0]?.id || '',
+      clientId: preselectedClientId || clients[0]?.id || '',
       startDate: defaultStartDate,
       endDate: defaultEndDate,
       pickupLocation: 'Aéroport Paris-Charles de Gaulle (CDG)',
@@ -60,6 +77,19 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
       notes: '',
     },
   });
+
+  // Client creation within reservation modal state
+  const [showFullClientModal, setShowFullClientModal] = useState(false);
+  const [showQuickAddClient, setShowQuickAddClient] = useState(false);
+  const [justAddedClient, setJustAddedClient] = useState<Client | null>(null);
+
+  // Quick client inline inputs
+  const [quickFirstName, setQuickFirstName] = useState('');
+  const [quickLastName, setQuickLastName] = useState('');
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickEmail, setQuickEmail] = useState('');
+  const [quickLicense, setQuickLicense] = useState('');
+  const [quickError, setQuickError] = useState('');
 
   // Re-sync form values whenever modal opens or preselected props change
   React.useEffect(() => {
@@ -74,7 +104,7 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
 
       reset({
         vehicleId: chosenVehicleId,
-        clientId: clients[0]?.id || '',
+        clientId: preselectedClientId || clients[0]?.id || '',
         startDate: start,
         endDate: end,
         pickupLocation: 'Aéroport Paris-Charles de Gaulle (CDG)',
@@ -84,13 +114,65 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
         depositAmount: 500,
         notes: '',
       });
+      setShowQuickAddClient(false);
+      setJustAddedClient(null);
     }
-  }, [isOpen, preselectedStartDate, preselectedVehicleId, vehicles, clients, availableVehicles, reset]);
+  }, [isOpen, preselectedStartDate, preselectedVehicleId, preselectedClientId, vehicles, clients, availableVehicles, reset]);
 
   const watchedVehicleId = watch('vehicleId');
+  const watchedClientId = watch('clientId');
   const watchedStartDate = watch('startDate');
   const watchedEndDate = watch('endDate');
   const watchedDailyRate = watch('dailyRate');
+
+  const selectedClient = useMemo(() => {
+    return clients.find((c) => c.id === watchedClientId);
+  }, [clients, watchedClientId]);
+
+  const handleCreateClientQuick = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+
+    if (!quickFirstName.trim() || !quickLastName.trim()) {
+      setQuickError('Veuillez renseigner le prénom et le nom');
+      return;
+    }
+    if (!quickPhone.trim()) {
+      setQuickError('Veuillez renseigner un numéro de téléphone');
+      return;
+    }
+
+    try {
+      const created = addClient({
+        firstName: quickFirstName.trim(),
+        lastName: quickLastName.trim(),
+        phone: quickPhone.trim(),
+        email:
+          quickEmail.trim().toLowerCase() ||
+          `${quickFirstName.trim().toLowerCase()}.${quickLastName.trim().toLowerCase()}@email.com`,
+        licenseNumber:
+          quickLicense.trim().toUpperCase() ||
+          `FR-${Math.floor(10000000 + Math.random() * 90000000)}`,
+        licenseIssueDate: '2019-01-10',
+        licenseExpiryDate: '2034-01-10',
+        birthDate: '1993-04-12',
+        address: 'Adresse non renseignée',
+        city: 'Paris',
+      });
+
+      setValue('clientId', created.id, { shouldValidate: true });
+      setJustAddedClient(created);
+      setShowQuickAddClient(false);
+      setQuickError('');
+      setQuickFirstName('');
+      setQuickLastName('');
+      setQuickPhone('');
+      setQuickEmail('');
+      setQuickLicense('');
+    } catch (err) {
+      console.error('Erreur création client inline:', err);
+    }
+  };
 
   // Update daily rate if vehicle changes
   React.useEffect(() => {
@@ -235,29 +317,211 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="booking-client" className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-blue-400" />
-                Client *
-              </label>
+              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                <label htmlFor="booking-client" className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-blue-400" />
+                  Client *
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAddClient(!showQuickAddClient)}
+                    className="text-[11px] font-bold text-slate-300 hover:text-white flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition cursor-pointer"
+                    title="Ajouter rapidement un client directement ici"
+                  >
+                    <Plus className="w-3 h-3 text-emerald-400" />
+                    <span>Création rapide</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullClientModal(true)}
+                    className="text-[11px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 transition cursor-pointer"
+                    title="Ouvrir le formulaire complet avec scanner de permis OCR"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    <span>Nouveau Client (OCR)</span>
+                  </button>
+                </div>
+              </div>
+
               <select
                 id="booking-client"
                 {...register('clientId')}
+                onChange={(e) => {
+                  if (e.target.value === '__NEW_CLIENT_INLINE__') {
+                    setShowQuickAddClient(true);
+                    return;
+                  }
+                  if (e.target.value === '__NEW_CLIENT_FULL__') {
+                    setShowFullClientModal(true);
+                    return;
+                  }
+                  setValue('clientId', e.target.value, { shouldValidate: true });
+                }}
                 aria-invalid={!!errors.clientId}
                 aria-describedby={errors.clientId ? 'clientId-error' : undefined}
-                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-3.5 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-3.5 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               >
-                <option value="">Sélectionner un client</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.firstName} {c.lastName} ({c.email})
-                  </option>
-                ))}
+                <option value="">Sélectionner un client...</option>
+                <optgroup label="Actions création directe">
+                  <option value="__NEW_CLIENT_INLINE__">➕ + Ajouter un nouveau client (Création rapide ici)</option>
+                  <option value="__NEW_CLIENT_FULL__">📄 + Créer avec scanner de permis OCR</option>
+                </optgroup>
+                <optgroup label="Clients enregistrés">
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.firstName} {c.lastName} ({c.email}) • {c.phone}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
+
+              {/* Just added client feedback banner */}
+              {justAddedClient && watchedClientId === justAddedClient.id && (
+                <div className="mt-1.5 flex items-center gap-2 p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-[11px] text-emerald-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  <span className="truncate">
+                    Nouveau client <strong>{justAddedClient.firstName} {justAddedClient.lastName}</strong> créé et sélectionné !
+                  </span>
+                </div>
+              )}
+
+              {/* Selected client details chip if not just created */}
+              {selectedClient && (!justAddedClient || watchedClientId !== justAddedClient.id) && (
+                <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px] text-slate-300 flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {selectedClient.phone} • Permis : <span className="font-mono text-cyan-400">{selectedClient.licenseNumber}</span>
+                  </span>
+                  {selectedClient.vipStatus && (
+                    <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black border border-amber-500/40">
+                      VIP
+                    </span>
+                  )}
+                </div>
+              )}
+
               {errors.clientId && (
                 <p id="clientId-error" className="mt-1 text-[11px] text-rose-400 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   {errors.clientId.message}
                 </p>
+              )}
+
+              {/* Inline Quick Add Client Panel */}
+              {showQuickAddClient && (
+                <div className="mt-2.5 p-3.5 rounded-xl bg-slate-850 border border-blue-500/40 shadow-xl flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <UserPlus className="w-3.5 h-3.5" />
+                      Création Rapide du Client
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickAddClient(false)}
+                      className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {quickError && (
+                    <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/30 p-1.5 rounded-lg flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                      {quickError}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Prénom *"
+                        value={quickFirstName}
+                        onChange={(e) => {
+                          setQuickFirstName(e.target.value);
+                          if (quickError) setQuickError('');
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Nom de famille *"
+                        value={quickLastName}
+                        onChange={(e) => {
+                          setQuickLastName(e.target.value);
+                          if (quickError) setQuickError('');
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <input
+                        type="tel"
+                        placeholder="Téléphone *"
+                        value={quickPhone}
+                        onChange={(e) => {
+                          setQuickPhone(e.target.value);
+                          if (quickError) setQuickError('');
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="email"
+                        placeholder="Email (facultatif)"
+                        value={quickEmail}
+                        onChange={(e) => setQuickEmail(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Numéro de permis (facultatif)"
+                      value={quickLicense}
+                      onChange={(e) => setQuickLicense(e.target.value.toUpperCase())}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-cyan-300 font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500 uppercase"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowQuickAddClient(false);
+                        setShowFullClientModal(true);
+                      }}
+                      className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-semibold hover:underline cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" /> Formulaire complet & OCR
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickAddClient(false)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium cursor-pointer"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCreateClientQuick}
+                        className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-md shadow-blue-600/30 cursor-pointer"
+                      >
+                        <Check className="w-3 h-3" /> Créer & Sélectionner
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -421,6 +685,20 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Full New Client Modal with License OCR */}
+      {showFullClientModal && (
+        <NewClientModal
+          isOpen={showFullClientModal}
+          onClose={() => setShowFullClientModal(false)}
+          onSuccess={(newClient) => {
+            setValue('clientId', newClient.id, { shouldValidate: true });
+            setJustAddedClient(newClient);
+            setShowQuickAddClient(false);
+            setShowFullClientModal(false);
+          }}
+        />
+      )}
     </div>
   );
 };

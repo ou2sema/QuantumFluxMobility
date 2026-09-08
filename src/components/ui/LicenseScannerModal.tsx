@@ -64,7 +64,7 @@ export const LicenseScannerModal: React.FC<LicenseScannerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A0E1A] flex flex-col justify-between">
+    <div className="fixed inset-0 z-[70] bg-[#0A0E1A] flex flex-col justify-between">
       {/* Header */}
       <div className="pt-safe px-4 py-3 bg-[#10172A] border-b border-slate-800 flex items-center justify-between z-10">
         <div>

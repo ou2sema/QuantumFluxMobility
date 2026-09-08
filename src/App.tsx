@@ -10,6 +10,7 @@ import { InvoiceModal } from './components/modals/InvoiceModal';
 import { PlateScannerModal } from './components/modals/PlateScannerModal';
 import { BookingWizardModal } from './components/bookings/BookingWizardModal';
 import { BookingFormModal } from './components/forms/BookingFormModal';
+import { NewClientModal } from './components/clients/NewClientModal';
 import { MobileSplashScreen } from './components/MobileSplashScreen';
 import { Loader2 } from 'lucide-react';
 
@@ -71,7 +72,14 @@ const CheckInRouteWrapper: React.FC<{
 
   return (
     <CheckInFlow
-      onCancel={() => navigate('/dashboard')}
+      onCancel={() => {
+        setSelectedBookingForCheckIn(null);
+        if (window.history.length > 1) {
+          navigate(-1);
+        } else {
+          navigate('/bookings');
+        }
+      }}
       onSuccess={onSuccess}
     />
   );
@@ -96,7 +104,14 @@ const CheckOutRouteWrapper: React.FC<{
 
   return (
     <CheckOutFlow
-      onCancel={() => navigate('/dashboard')}
+      onCancel={() => {
+        setSelectedBookingForCheckOut(null);
+        if (window.history.length > 1) {
+          navigate(-1);
+        } else {
+          navigate('/bookings');
+        }
+      }}
       onSuccess={onSuccess}
     />
   );
@@ -110,8 +125,10 @@ const AppContent: React.FC = () => {
   // Modals state
   const [showBookingWizard, setShowBookingWizard] = useState(false);
   const [showZodBookingForm, setShowZodBookingForm] = useState(false);
+  const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [wizardPreSelectedVehicleId, setWizardPreSelectedVehicleId] = useState<string | undefined>();
   const [wizardPreSelectedStartDate, setWizardPreSelectedStartDate] = useState<string | undefined>();
+  const [wizardPreSelectedClientId, setWizardPreSelectedClientId] = useState<string | undefined>();
   const [showPlateScanner, setShowPlateScanner] = useState(false);
   const [activeInvoiceBookingId, setActiveInvoiceBookingId] = useState<string | null>(null);
 
@@ -159,9 +176,14 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleOpenBookingWizardWithVehicle = (vehicleId?: string, startDate?: string) => {
+  const handleOpenBookingWizardWithVehicle = (
+    vehicleId?: string,
+    startDate?: string,
+    clientId?: string
+  ) => {
     setWizardPreSelectedVehicleId(vehicleId);
     setWizardPreSelectedStartDate(startDate);
+    setWizardPreSelectedClientId(clientId);
     setShowZodBookingForm(true);
   };
 
@@ -225,8 +247,10 @@ const AppContent: React.FC = () => {
                 path="/clients"
                 element={
                   <ClientsView
-                    onOpenNewClientModal={() => handleOpenBookingWizardWithVehicle()}
-                    onStartBookingWithClient={() => handleOpenBookingWizardWithVehicle()}
+                    onOpenNewClientModal={() => setShowNewClientModal(true)}
+                    onStartBookingWithClient={(clientId) =>
+                      handleOpenBookingWizardWithVehicle(undefined, undefined, clientId)
+                    }
                   />
                 }
               />
@@ -286,7 +310,7 @@ const AppContent: React.FC = () => {
         {/* Floating Action Button for Rapid Tactile Access */}
         <QuickActionFAB
           onOpenBookingWizard={() => handleOpenBookingWizardWithVehicle()}
-          onOpenNewClient={() => handleOpenBookingWizardWithVehicle()}
+          onOpenNewClient={() => setShowNewClientModal(true)}
           onOpenPlateScanner={() => setShowPlateScanner(true)}
         />
 
@@ -315,9 +339,22 @@ const AppContent: React.FC = () => {
             setShowZodBookingForm(false);
             setWizardPreSelectedVehicleId(undefined);
             setWizardPreSelectedStartDate(undefined);
+            setWizardPreSelectedClientId(undefined);
           }}
           preselectedVehicleId={wizardPreSelectedVehicleId}
           preselectedStartDate={wizardPreSelectedStartDate}
+          preselectedClientId={wizardPreSelectedClientId}
+        />
+      )}
+
+      {/* New Client Modal */}
+      {showNewClientModal && (
+        <NewClientModal
+          isOpen={showNewClientModal}
+          onClose={() => setShowNewClientModal(false)}
+          onSuccess={() => {
+            setShowNewClientModal(false);
+          }}
         />
       )}
 

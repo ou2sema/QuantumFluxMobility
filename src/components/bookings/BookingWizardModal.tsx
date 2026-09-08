@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
 import { TactileInput } from '../ui/TactileInput';
+import { NewClientModal } from '../clients/NewClientModal';
 import { StatusBadge } from '../ui/StatusBadge';
 import confetti from 'canvas-confetti';
 
@@ -44,6 +45,7 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
   const [selectedClient, setSelectedClient] = useState<Client | null>(clients[0] || null);
   const [clientSearch, setClientSearch] = useState('');
   const [isCreatingNewClient, setIsCreatingNewClient] = useState(false);
+  const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -218,14 +220,24 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Rechercher un client existant
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingNewClient(!isCreatingNewClient)}
-                  className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 active:scale-95"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>{isCreatingNewClient ? 'Choisir existant' : '+ Création rapide'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewClientModal(true)}
+                    className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 active:scale-95 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 px-2 py-1 rounded-lg"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Nouveau Client (OCR)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingNewClient(!isCreatingNewClient)}
+                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 active:scale-95 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2 py-1 rounded-lg"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>{isCreatingNewClient ? 'Choisir existant' : '+ Rapide'}</span>
+                  </button>
+                </div>
               </div>
 
               {isCreatingNewClient ? (
@@ -696,6 +708,18 @@ export const BookingWizardModal: React.FC<BookingWizardModalProps> = ({
           )}
         </div>
       </div>
+
+      {showNewClientModal && (
+        <NewClientModal
+          isOpen={showNewClientModal}
+          onClose={() => setShowNewClientModal(false)}
+          onSuccess={(newClient) => {
+            setSelectedClient(newClient);
+            setIsCreatingNewClient(false);
+            setShowNewClientModal(false);
+          }}
+        />
+      )}
     </div>
   );
 };

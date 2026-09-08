@@ -46,24 +46,24 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
           dot: 'bg-slate-400',
         };
 
-      // Booking Statuses
+      // Booking Statuses (Color code: Done = Blue, Checked In = Green, Checked Out/End = Yellow, Cancelled = Rose)
       case 'CONFIRMED':
         return {
-          label: 'CONFIRMÉE',
-          bg: 'bg-indigo-500/15 border-indigo-500/40 text-indigo-400',
-          dot: 'bg-indigo-400',
+          label: 'RÉSERVATION FAITE',
+          bg: 'bg-blue-500/15 border-blue-500/40 text-blue-400',
+          dot: 'bg-blue-400',
         };
       case 'IN_PROGRESS':
         return {
-          label: 'EN COURS',
-          bg: 'bg-blue-500/15 border-blue-500/40 text-blue-400',
-          dot: 'bg-blue-400 animate-pulse',
+          label: 'CHECK-IN VALIDÉ',
+          bg: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400',
+          dot: 'bg-emerald-400 animate-pulse',
         };
       case 'COMPLETED':
         return {
-          label: 'CLÔTURÉE',
-          bg: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400',
-          dot: 'bg-emerald-400',
+          label: 'CHECK-OUT EFFECTUÉ',
+          bg: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
+          dot: 'bg-amber-400',
         };
       case 'CANCELLED':
         return {
@@ -74,8 +74,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       case 'PENDING':
         return {
           label: 'EN ATTENTE',
-          bg: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
-          dot: 'bg-amber-400',
+          bg: 'bg-blue-500/15 border-blue-500/40 text-blue-400',
+          dot: 'bg-blue-400',
         };
 
       default:

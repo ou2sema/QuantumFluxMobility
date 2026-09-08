@@ -47,8 +47,7 @@ export const BottomNav: React.FC = () => {
   }
 
   const handleNavClick = (id: string) => {
-    setActiveTab(id as any);
-    navigate(`/${id}`);
+    navigate(id === 'client_portal' ? '/portal' : `/${id}`);
   };
 
   return (

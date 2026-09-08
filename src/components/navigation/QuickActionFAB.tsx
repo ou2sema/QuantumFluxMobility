@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -24,6 +25,7 @@ export const QuickActionFAB: React.FC<QuickActionFABProps> = ({
   onOpenNewClient,
   onOpenPlateScanner,
 }) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const { setActiveTab, bookings, setSelectedBookingForCheckIn, setSelectedBookingForCheckOut } = useApp();
   const {
@@ -43,9 +45,9 @@ export const QuickActionFAB: React.FC<QuickActionFABProps> = ({
     const readyBooking = bookings.find(b => b.status === 'CONFIRMED');
     if (readyBooking) {
       setSelectedBookingForCheckIn(readyBooking);
-      setActiveTab('checkin');
+      navigate(`/checkin/${readyBooking.id}`);
     } else {
-      setActiveTab('bookings');
+      navigate('/bookings');
     }
   };
 
@@ -53,9 +55,9 @@ export const QuickActionFAB: React.FC<QuickActionFABProps> = ({
     const activeBooking = bookings.find(b => b.status === 'IN_PROGRESS');
     if (activeBooking) {
       setSelectedBookingForCheckOut(activeBooking);
-      setActiveTab('checkout');
+      navigate(`/checkout/${activeBooking.id}`);
     } else {
-      setActiveTab('bookings');
+      navigate('/bookings');
     }
   };
 

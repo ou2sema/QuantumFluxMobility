@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Booking, Vehicle } from '../types';
 
 export const useBooking = () => {
+  const navigate = useNavigate();
   const {
     bookings,
     vehicles,
@@ -173,12 +175,20 @@ export const useBooking = () => {
 
   const startCheckInFlow = (booking: Booking) => {
     setSelectedBookingForCheckIn(booking);
-    setActiveTab('checkin');
+    if (booking?.id) {
+      navigate(`/checkin/${booking.id}`);
+    } else {
+      navigate('/checkin');
+    }
   };
 
   const startCheckOutFlow = (booking: Booking) => {
     setSelectedBookingForCheckOut(booking);
-    setActiveTab('checkout');
+    if (booking?.id) {
+      navigate(`/checkout/${booking.id}`);
+    } else {
+      navigate('/checkout');
+    }
   };
 
   return {

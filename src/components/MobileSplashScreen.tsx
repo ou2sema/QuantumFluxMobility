@@ -14,23 +14,23 @@ export const MobileSplashScreen: React.FC<MobileSplashScreenProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(15);
-  const [statusText, setStatusText] = useState('Initialisation de QuantumFlux...');
+  const [statusText, setStatusText] = useState('Initialisation de AUTORENT CAR TUNISIA...');
 
   useEffect(() => {
     // Stepped progression simulation for smooth tactile feedback
     const t1 = setTimeout(() => {
       setProgress(45);
-      setStatusText('Synchronisation de la flotte...');
+      setStatusText('Synchronisation de la flotte Tunisie...');
     }, 600);
 
     const t2 = setTimeout(() => {
       setProgress(80);
-      setStatusText('Chargement des protocoles hors-ligne...');
+      setStatusText('Chargement des tarifs en DT & protocoles...');
     }, 1300);
 
     const t3 = setTimeout(() => {
       setProgress(100);
-      setStatusText('Prêt pour la mobilité');
+      setStatusText('Prêt pour la location');
     }, 1900);
 
     const t4 = setTimeout(() => {
@@ -129,22 +129,27 @@ export const MobileSplashScreen: React.FC<MobileSplashScreenProps> = ({
               transition={{ delay: 0.45, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="mt-6 flex flex-col items-center text-center"
             >
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black tracking-[0.14em] text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-sm font-sans">
-                  QUANTUM<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400">FLUX</span>
-                </h1>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-700/60 shadow-sm shadow-cyan-900/30">
-                  MOBILITY
-                </span>
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-[0.08em] text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-200 drop-shadow-sm font-sans">
+                    AUTORENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">CAR TUNISIA</span>
+                  </h1>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 shadow-sm shadow-emerald-900/30">
+                    .TN
+                  </span>
+                </div>
+                <div className="text-emerald-400 font-serif font-bold text-sm tracking-wide">
+                  لكراء السيارات
+                </div>
               </div>
 
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.65, duration: 0.5 }}
-                className="text-xs sm:text-sm font-medium tracking-[0.08em] text-slate-400 mt-2 uppercase font-sans"
+                className="text-xs sm:text-sm font-medium tracking-[0.06em] text-slate-400 mt-2 uppercase font-sans"
               >
-                Système Haute Performance de Mobilité
+                Location de Véhicules & Gestion de Flotte Tunisie
               </motion.p>
             </motion.div>
           </div>

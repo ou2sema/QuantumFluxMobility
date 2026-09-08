@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types';
@@ -84,6 +85,7 @@ export const TopNavBar: React.FC = () => {
 
   const { isAdmin, isAgentTechnique, isAgentComptoir } = useAuth();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showNotifDrawer, setShowNotifDrawer] = useState(false);
   const [showEditAgencyModal, setShowEditAgencyModal] = useState(false);
@@ -113,18 +115,18 @@ export const TopNavBar: React.FC = () => {
         const bk = bookings.find(b => b.id === notif.targetId);
         if (bk) {
           setSelectedBookingForCheckIn(bk);
-          setActiveTab('checkin');
+          navigate(`/checkin/${bk.id}`);
         }
       } else if (notif.type === 'CHECKOUT_DUE') {
         const bk = bookings.find(b => b.id === notif.targetId);
         if (bk) {
           setSelectedBookingForCheckOut(bk);
-          setActiveTab('checkout');
+          navigate(`/checkout/${bk.id}`);
         }
       } else if (notif.type === 'LICENSE_EXPIRING') {
-        setActiveTab('clients');
+        navigate('/clients');
       } else if (notif.type === 'MAINTENANCE_DUE') {
-        setActiveTab('maintenance');
+        navigate('/maintenance');
       }
     }
   };

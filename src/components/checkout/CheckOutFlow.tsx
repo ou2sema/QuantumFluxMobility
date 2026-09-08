@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useCheckIn } from '../../hooks/useCheckIn';
 import { DamageItem, MandatoryPhotos } from '../../types';
@@ -33,9 +34,11 @@ interface CheckOutFlowProps {
 export const CheckOutFlow: React.FC<CheckOutFlowProps> = ({ onCancel, onSuccess }) => {
   const { selectedBookingForCheckOut, setSelectedBookingForCheckOut, bookings, vehicles } = useApp();
   const { calculateCheckOutSurcharges, completeCheckOut } = useCheckIn();
+  const { bookingId } = useParams<{ bookingId?: string }>();
 
   const activeBooking =
     selectedBookingForCheckOut ||
+    (bookingId ? bookings.find(b => b.id === bookingId || b.bookingNumber === bookingId) : undefined) ||
     bookings.find(b => b.status === 'IN_PROGRESS');
 
   const activeVehicle = activeBooking

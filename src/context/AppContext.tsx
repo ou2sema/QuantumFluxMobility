@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Agency,
   AppNotification,
@@ -60,6 +61,8 @@ export interface AppContextType {
   bookings: Booking[];
   addBooking: (bookingData: Omit<Booking, 'id' | 'bookingNumber' | 'createdAt'>) => Booking;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
+  checkAndAutoUpdateBooking: (booking: Booking) => { updated: boolean; booking: Booking; reason?: 'AUTO_CANCELLED' | 'AUTO_COMPLETED' };
+  checkAllBookingsLifecycle: () => number;
   selectedBookingForCheckIn: Booking | null;
   setSelectedBookingForCheckIn: (booking: Booking | null) => void;
   selectedBookingForCheckOut: Booking | null;
@@ -110,11 +113,51 @@ const CombinedBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const maintenanceSlice = useMaintenance();
   const syncSlice = useSync();
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [activeTab, setActiveTab] = useState<AppContextType['activeTab']>('dashboard');
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('autofleet_pro_notifs');
     return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
   });
+
+  // Sync activeTab with URL changes
+  useEffect(() => {
+    const path = location.pathname.replace(/^\//, '').split('/')[0];
+    const validTabs: AppContextType['activeTab'][] = [
+      'dashboard',
+      'bookings',
+      'calendar',
+      'fleet',
+      'clients',
+      'checkin',
+      'checkout',
+      'maintenance',
+      'users',
+      'reports',
+      'client_portal',
+    ];
+
+    if (path === 'portal') {
+      setActiveTab('client_portal');
+    } else if (validTabs.includes(path as any)) {
+      setActiveTab(path as any);
+    } else if (location.pathname === '/') {
+      setActiveTab('dashboard');
+    }
+  }, [location.pathname]);
+
+  const handleSetActiveTab = useCallback(
+    (tab: AppContextType['activeTab']) => {
+      setActiveTab(tab);
+      const targetPath = tab === 'client_portal' ? '/portal' : `/${tab}`;
+      if (location.pathname !== targetPath && !location.pathname.startsWith(targetPath + '/')) {
+        navigate(targetPath);
+      }
+    },
+    [location.pathname, navigate]
+  );
 
   useEffect(() => {
     localStorage.setItem('autofleet_pro_notifs', JSON.stringify(notifications));
@@ -145,7 +188,7 @@ const CombinedBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     markAllNotificationsAsRead,
     deleteNotification,
     activeTab,
-    setActiveTab,
+    setActiveTab: handleSetActiveTab,
   };
 
   return (

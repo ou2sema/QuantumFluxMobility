@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "QuantumFlux Mobility",
-  "short_name": "QuantumFlux",
-  "description": "Plateforme professionnelle de gestion de flotte et location de véhicules nouvelle génération avec suivi en temps réel et mode hors-ligne.",
+  "name": "AUTORENT CAR TUNISIA",
+  "short_name": "AutoRent TN",
+  "description": "Plateforme professionnelle de gestion de flotte et location de véhicules en Tunisie (AUTORENT CAR TUNISIA).",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -52,14 +52,14 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Tableau de bord QuantumFlux Mobility"
+      "label": "Tableau de bord AUTORENT CAR TUNISIA"
     },
     {
       "src": "/screenshot-mobile.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Vue mobile QuantumFlux Mobility"
+      "label": "Vue mobile AUTORENT CAR TUNISIA"
     }
   ],
   "shortcuts": [

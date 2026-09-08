@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
 import { ClientDetailModal } from './ClientDetailModal';
+import { NewClientModal } from './NewClientModal';
 
 interface ClientsViewProps {
   onOpenNewClientModal?: () => void;
@@ -26,6 +27,15 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
   const { clients } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isInternalNewClientOpen, setIsInternalNewClientOpen] = useState(false);
+
+  const handleOpenNewClient = () => {
+    if (onOpenNewClientModal) {
+      onOpenNewClientModal();
+    } else {
+      setIsInternalNewClientOpen(true);
+    }
+  };
 
   const filteredClients = clients.filter(c => {
     if (!searchTerm.trim()) return true;
@@ -52,7 +62,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         <TactileButton
           variant="primary"
           icon={UserPlus}
-          onClick={onOpenNewClientModal}
+          onClick={handleOpenNewClient}
         >
           Nouveau Client
         </TactileButton>
@@ -118,6 +128,17 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
           client={selectedClient}
           onClose={() => setSelectedClient(null)}
           onStartBooking={onStartBookingWithClient}
+        />
+      )}
+
+      {/* Internal New Client Modal */}
+      {isInternalNewClientOpen && (
+        <NewClientModal
+          isOpen={isInternalNewClientOpen}
+          onClose={() => setIsInternalNewClientOpen(false)}
+          onSuccess={(newClient) => {
+            setSelectedClient(newClient);
+          }}
         />
       )}
     </div>

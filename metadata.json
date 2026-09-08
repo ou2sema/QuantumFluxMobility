@@ -1,6 +1,6 @@
 {
-  "name": "QuantumFlux Mobility",
-  "description": "Application tactile de gestion de flotte automobile nouvelle génération : gestion de flotte, réservations, check-in/out avec photos, scanner permis, diagramme de dommages et signature.",
+  "name": "AUTORENT CAR TUNISIA",
+  "description": "Application tactile de gestion de flotte et de location automobile en Tunisie : contrats, réservations en DT, état des lieux avec photos, scanner permis OCR, diagramme de dommages et facturation.",
   "requestFramePermissions": [
     "camera"
   ],
