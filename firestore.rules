@@ -34,7 +34,6 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
-        request.auth.token.email == 'ou3sema@gmail.com' ||
         getUserRole() == 'ADMIN'
       );
     }
@@ -148,6 +147,20 @@ service cloud.firestore {
         )
       );
       allow delete: if isValidId(bookingId) && (isAdmin() || isManager());
+
+      // --- Booking Documents Subcollection ---
+      match /documents/{docId} {
+        allow read: if isStaff() || (
+          isSignedIn() && (
+            resource.data.clientId == request.auth.uid ||
+            get(/databases/$(database)/documents/bookings/$(bookingId)).data.clientId == request.auth.uid
+          )
+        );
+        allow create, update: if isValidId(docId) && (
+          isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
+        );
+        allow delete: if isValidId(docId) && (isAdmin() || isManager());
+      }
     }
 
     // --- 5. Payments Collection ---
@@ -190,6 +203,15 @@ service cloud.firestore {
         isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
       );
       allow delete: if isValidId(checkInId) && (isAdmin() || isManager());
+
+      // --- Check-In Photos Subcollection ---
+      match /photos/{photoId} {
+        allow read: if isStaff() || (
+          isSignedIn() && get(/databases/$(database)/documents/checkIns/$(checkInId)).data.clientId == request.auth.uid
+        );
+        allow create, update: if isStaff() || isSignedIn();
+        allow delete: if isStaff() || isAdmin();
+      }
     }
 
     match /checkOuts/{checkOutId} {
@@ -203,6 +225,15 @@ service cloud.firestore {
         isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
       );
       allow delete: if isValidId(checkOutId) && (isAdmin() || isManager());
+
+      // --- Check-Out Photos Subcollection ---
+      match /photos/{photoId} {
+        allow read: if isStaff() || (
+          isSignedIn() && get(/databases/$(database)/documents/checkOuts/$(checkOutId)).data.clientId == request.auth.uid
+        );
+        allow create, update: if isStaff() || isSignedIn();
+        allow delete: if isStaff() || isAdmin();
+      }
     }
 
     // --- 9. Damage Records ---
