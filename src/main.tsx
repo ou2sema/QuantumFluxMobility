@@ -19,7 +19,7 @@ if ('serviceWorker' in navigator && typeof window !== 'undefined') {
     navigator.serviceWorker
       .register('/sw.js')
       .then((reg) => {
-        console.log('QuantumFlux Mobility SW registered:', reg.scope);
+        console.log('AUTORENT CAR TUNISIA SW registered:', reg.scope);
       })
       .catch((err) => {
         console.warn('SW registration failed:', err);

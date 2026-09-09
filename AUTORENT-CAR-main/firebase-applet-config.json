@@ -1,0 +1,12 @@
+{
+  "projectId": "auto-rent-car",
+  "appId": "1:883024856330:web:246ade63ec8b4574db66f3",
+  "apiKey": "AIzaSyD1DIFSb6Qo0QcQVDW2h1t-LoYTc3E7I6Q",
+  "authDomain": "auto-rent-car.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "auto-rent-car.firebasestorage.app",
+  "messagingSenderId": "883024856330",
+  "measurementId": "G-1X6M7HNB92",
+  "oAuthClientId": "883024856330-ttq69p6adk3g3kqg2ufgi8vt72dr41ge.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
+}

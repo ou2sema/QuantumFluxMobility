@@ -48,7 +48,7 @@ export const vehicleFormSchema = z.object({
   category: z.string().min(1, 'Catégorie requise'),
   year: z.number().min(2000).max(2030),
   mileage: z.number().min(0, 'Le kilométrage doit être positif'),
-  dailyRate: z.number().min(1, 'Le tarif journalier doit être au moins 1€'),
+  dailyRate: z.number().min(1, 'Le tarif journalier doit être au moins 1 DT'),
   fuelType: z.enum(['ESSENCE', 'DIESEL', 'HYBRIDE', 'ELECTRIQUE']),
   fuelCapacityLiters: z.number().min(1).default(50),
   currentFuelLevel: z.number().min(0).max(100).default(100),

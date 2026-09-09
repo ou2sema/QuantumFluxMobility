@@ -112,7 +112,7 @@ export const EditAgencyModal: React.FC<EditAgencyModalProps> = ({ onClose }) => 
                   : 'bg-[#151B30] text-gray-400 border-gray-800 hover:text-white'
               }`}
             >
-              {ag.city} • {ag.name.replace('QuantumFlux ', '')}
+              {ag.city} • {ag.name.replace(/^AUTORENT(\s+CAR\s+TUNISIA)?\s+/i, '')}
             </button>
           ))}
         </div>

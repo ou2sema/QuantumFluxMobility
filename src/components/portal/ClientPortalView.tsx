@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Vehicle } from '../../types';
-import { QuantumFluxLogo } from '../ui/QuantumFluxLogo';
+import { AutoRentLogo } from '../ui/AutoRentLogo';
 import {
   Car,
   Calendar,
@@ -159,7 +159,7 @@ export const ClientPortalView: React.FC = () => {
           </div>
         </div>
         <div className="hidden sm:block">
-          <QuantumFluxLogo variant="horizontal" size="sm" showSubtitle={false} className="p-3 bg-black/40 rounded-2xl border border-cyan-500/20" />
+          <AutoRentLogo variant="horizontal" size="sm" showSubtitle={false} className="p-3 bg-black/40 rounded-2xl border border-cyan-500/20" />
         </div>
       </div>
 

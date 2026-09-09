@@ -1,12 +1,12 @@
 {
-  "projectId": "quantumflux-mobility",
-  "appId": "1:711887714288:web:b1e3ab344e09da5f9d8f35",
-  "apiKey": "AIzaSyArZnefFhplHOffkc2YvRmPFdDd1PzX_Ps",
-  "authDomain": "quantumflux-mobility.firebaseapp.com",
-  "firestoreDatabaseId": "(default)",
-  "storageBucket": "quantumflux-mobility.firebasestorage.app",
-  "messagingSenderId": "711887714288",
-  "measurementId": "G-SMEFG2VFPD",
-  "oAuthClientId": "",
+  "projectId": "logical-tempo-qmvz5",
+  "appId": "1:208712743628:web:953a117bb4fd3a55872069",
+  "apiKey": "AIzaSyB4V-6mgwRG8X6E7dw3RARBtlVUy_CHUwI",
+  "authDomain": "logical-tempo-qmvz5.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-quantumfluxmobil-9eb3e2b9-20e8-4afa-b1fe-737940e581f7",
+  "storageBucket": "logical-tempo-qmvz5.firebasestorage.app",
+  "messagingSenderId": "208712743628",
+  "measurementId": "",
+  "oAuthClientId": "208712743628-3gsnu13i3htakif6lqdslbpulhb6kv62.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

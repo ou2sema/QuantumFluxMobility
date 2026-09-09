@@ -334,7 +334,7 @@ export function generateContractPdf({
     '• Le locataire déclare être titulaire d\'un permis de conduire en cours de validité depuis plus de 2 ans et n\'avoir fait l\'objet d\'aucune suspension.',
     '• Restitution : Le véhicule doit être restitué avec le même niveau de carburant et à la date/heure stipulées ci-dessus sous peine de pénalités.',
     '• Caution & Franchise : La caution de ' + booking.depositAmount + ' DT sera libérée après vérification de l\'état des lieux retour contradictoire.',
-    '• Sinistres : Tout dommage ou accident doit être notifié à QuantumFlux dans les 24 heures avec constat amiable dûment rempli.',
+    '• Sinistres : Tout dommage ou accident doit être notifié à AUTORENT CAR TUNISIA dans les 24 heures avec constat amiable dûment rempli.',
   ];
   let termY = y + 9;
   for (const t of terms) {
@@ -355,7 +355,7 @@ export function generateContractPdf({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(...primaryNavy);
-  doc.text('POUR L\'AGENCE QUANTUMFLUX', margin + 4, y + 5);
+  doc.text('POUR L\'AGENCE AUTORENT CAR TUNISIA', margin + 4, y + 5);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7);
   doc.setTextColor(...textMuted);
@@ -368,7 +368,7 @@ export function generateContractPdf({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...textMuted);
-  doc.text('Document horodaté et sécurisé par QuantumFlux Mobility Cloud', margin + 8, y + 25);
+  doc.text('Document horodaté et sécurisé par AUTORENT CAR TUNISIA Cloud', margin + 8, y + 25);
 
   // Client Signature
   const clientSigX = margin + sigBoxWidth + 8;
@@ -398,7 +398,7 @@ export function generateContractPdf({
   doc.setFontSize(6.5);
   doc.setTextColor(148, 163, 184);
   doc.text(
-    `QuantumFlux Mobility SAS au capital de 100 000 DT • SIRET 894 120 442 00019 • ${invoiceNumber} • Page 1/1`,
+    `AUTORENT CAR TUNISIA SARL au capital de 100 000 DT • RC Tunis • ${invoiceNumber} • Page 1/1`,
     pageWidth / 2,
     pageHeight - 6,
     { align: 'center' }
@@ -772,7 +772,7 @@ export function printContractDocument(options: GenerateContractPdfOptions): Prom
 
     <div class="signatures">
       <div class="sig-box">
-        <div class="sig-header">Pour l'Agence QuantumFlux</div>
+        <div class="sig-header">Pour l'Agence AUTORENT CAR TUNISIA</div>
         <div class="sig-sub">Signature & Cachet commercial</div>
         <div class="sig-stamp">✓ VALIDÉ ET ENREGISTRÉ</div>
       </div>

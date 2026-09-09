@@ -1,20 +1,62 @@
 export type UserRole = 
   | 'ADMIN' 
+  | 'MANAGER' 
+  | 'AGENT' 
+  | 'FLEET' 
+  | 'ACCOUNTANT'
   | 'AGENT_COMPTOIR' 
   | 'AGENT_TECHNIQUE';
 
-export type VehicleStatus = 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'UNAVAILABLE' | 'RESERVED';
+export type VehicleStatus = 
+  | 'AVAILABLE' 
+  | 'RESERVED' 
+  | 'PREPARING' 
+  | 'RENTED' 
+  | 'RETURNED' 
+  | 'INSPECTION' 
+  | 'MAINTENANCE' 
+  | 'BLOCKED' 
+  | 'UNAVAILABLE';
+
 export type VehicleCategory = 'CITADINE' | 'COMPACTE' | 'BERLINE' | 'SUV' | 'UTILITAIRE' | 'PREMIUM' | 'ELECTRIQUE';
 export type FuelType = 'ESSENCE' | 'DIESEL' | 'HYBRIDE' | 'ELECTRIQUE';
 export type Transmission = 'MANUELLE' | 'AUTOMATIQUE';
 
-export type BookingStatus = 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING';
-export type PaymentMethod = 'STRIPE_CARD' | 'CASH' | 'TRANSFER';
-export type PaymentStatus = 'PAID' | 'PENDING' | 'REFUNDED' | 'PARTIAL';
+export type BookingStatus = 
+  | 'QUOTE' 
+  | 'PENDING' 
+  | 'CONFIRMED' 
+  | 'CHECKED_IN' 
+  | 'ACTIVE' 
+  | 'RETURNED' 
+  | 'COMPLETED' 
+  | 'CANCELLED' 
+  | 'IN_PROGRESS';
+
+export type PaymentMethod = 'STRIPE_CARD' | 'CASH' | 'TRANSFER' | 'CHEQUE';
+
+export type PaymentStatus = 
+  | 'PENDING' 
+  | 'AUTHORIZED' 
+  | 'PAID' 
+  | 'PARTIALLY_PAID' 
+  | 'REFUNDED' 
+  | 'FAILED' 
+  | 'CANCELLED' 
+  | 'PARTIAL';
+
+export type InvoiceStatus = 
+  | 'DRAFT' 
+  | 'ISSUED' 
+  | 'PAID' 
+  | 'PARTIALLY_PAID' 
+  | 'OVERDUE' 
+  | 'VOID';
 
 export type DamageZone = 'FRONT' | 'REAR' | 'LEFT' | 'RIGHT' | 'ROOF' | 'WINDSHIELD' | 'WHEELS' | 'INTERIOR';
 export type DamageType = 'SCRATCH' | 'DENT' | 'CRACK' | 'STAIN' | 'BROKEN_PART' | 'OTHER';
-export type DamageSeverity = 'LOW' | 'MEDIUM' | 'HIGH';
+export type DamageSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type DamageStatus = 'OPEN' | 'ASSESSED' | 'REPAIRING' | 'RESOLVED' | 'CHARGED_TO_CUSTOMER';
 
 export interface User {
   id: string;
@@ -292,3 +334,72 @@ export interface AppNotification {
   targetId?: string;
   severity: 'INFO' | 'WARNING' | 'ALERT';
 }
+
+export interface DamageRecord {
+  id: string;
+  vehicleId: string;
+  vehiclePlate?: string;
+  bookingId?: string;
+  location: string;
+  zone: DamageZone;
+  description: string;
+  severity: DamageSeverity;
+  status: DamageStatus;
+  repairCost: number;
+  photoUrl?: string;
+  photos?: string[];
+  reportedAt: string;
+  resolvedAt?: string;
+  reportedBy: string;
+  chargedToClientId?: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  bookingId: string;
+  clientId: string;
+  amount: number;
+  currency: string; // 'DT'
+  method: PaymentMethod;
+  status: PaymentStatus;
+  reference?: string;
+  timestamp: string;
+  processedBy?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  actorId: string;
+  actorName: string;
+  action: string;
+  entityType: 'BOOKING' | 'VEHICLE' | 'CLIENT' | 'INSPECTION' | 'MAINTENANCE' | 'PAYMENT' | 'DAMAGE';
+  entityId: string;
+  details: string;
+  timestamp: string;
+}
+
+export interface VehicleProfitability {
+  vehicleId: string;
+  brand: string;
+  model: string;
+  plate: string;
+  totalRevenue: number;
+  totalMaintenanceCost: number;
+  totalDamageCost: number;
+  netContribution: number;
+  rentalDays: number;
+  totalDays: number;
+  utilizationRate: number; // percentage e.g. 78.5%
+  revenuePerAvailableDay: number;
+}
+
+export interface DailyOperationsSummary {
+  pickupsToday: number;
+  returnsToday: number;
+  overdueReturns: number;
+  unavailableVehicles: number;
+  unpaidInvoices: number;
+  pendingSignatures: number;
+  activeRentals: number;
+}
+

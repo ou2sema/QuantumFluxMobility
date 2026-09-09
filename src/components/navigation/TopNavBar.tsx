@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types';
-import { QuantumFluxLogo } from '../ui/QuantumFluxLogo';
+import { AutoRentLogo } from '../ui/AutoRentLogo';
 import { EditAgencyModal } from '../modals/EditAgencyModal';
 import { FirestoreSyncModal } from '../modals/FirestoreSyncModal';
 import { PinLockScreen } from '../auth/PinLockScreen';
@@ -45,6 +45,30 @@ const ROLE_LABELS: Record<UserRole, { title: string; subtitle: string; color: st
     subtitle: 'Accès total & gestion utilisateurs',
     color: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
     icon: ShieldCheck,
+  },
+  MANAGER: {
+    title: 'Directeur / Manager',
+    subtitle: 'Flotte, réservations, approbations & rentabilité',
+    color: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    icon: ShieldCheck,
+  },
+  AGENT: {
+    title: 'Agent Commercial',
+    subtitle: 'Réservations, contrats & accueil client',
+    color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    icon: Users,
+  },
+  FLEET: {
+    title: 'Responsable Flotte',
+    subtitle: 'Gestion technique, sinistres & réparations',
+    color: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    icon: Wrench,
+  },
+  ACCOUNTANT: {
+    title: 'Comptable',
+    subtitle: 'Facturation, règlements & bilans financiers',
+    color: 'bg-teal-500/20 text-teal-300 border-teal-500/30',
+    icon: Users,
   },
   AGENT_COMPTOIR: {
     title: 'Agent de Comptoir',
@@ -139,8 +163,8 @@ export const TopNavBar: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand & Agency Selector */}
           <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-shrink">
-            <QuantumFluxLogo variant="horizontal" size="sm" showSubtitle={false} className="sm:hidden" />
-            <QuantumFluxLogo variant="horizontal" size="md" showSubtitle={false} className="hidden sm:flex" />
+            <AutoRentLogo variant="horizontal" size="sm" showSubtitle={false} className="sm:hidden" />
+            <AutoRentLogo variant="horizontal" size="md" showSubtitle={false} className="hidden sm:flex" />
             <button
               type="button"
               onClick={() => setShowEditAgencyModal(true)}
