@@ -16,9 +16,16 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@services/*": ["./src/services/*"],
+      "@features/*": ["./src/features/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@types/*": ["./src/types.ts"],
+      "@context/*": ["./src/context/*"],
+      "@schemas/*": ["./src/schemas/*"],
+      "@data/*": ["./src/data/*"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
