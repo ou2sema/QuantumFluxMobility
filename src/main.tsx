@@ -13,6 +13,26 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
+// Auto-reload gracefully when a new deployment updates chunk hashes
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', () => {
+    window.location.reload();
+  });
+
+  window.addEventListener('error', (e) => {
+    if (e.message && e.message.includes('Failed to fetch dynamically imported module')) {
+      const hasReloaded = sessionStorage.getItem('chunk_reload');
+      if (!hasReloaded) {
+        sessionStorage.setItem('chunk_reload', 'true');
+        window.location.reload();
+      }
+    }
+  });
+
+  // Clear reload flag on normal load
+  sessionStorage.removeItem('chunk_reload');
+}
+
 // Register Service Worker for PWA & Offline Support
 if ('serviceWorker' in navigator && typeof window !== 'undefined') {
   window.addEventListener('load', () => {

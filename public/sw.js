@@ -80,8 +80,12 @@ self.addEventListener('fetch', (event) => {
           networkResponse.status === 200 &&
           (url.pathname.startsWith('/assets/') || url.pathname.endsWith('.png') || url.pathname.endsWith('.svg'))
         ) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          const contentType = networkResponse.headers.get('content-type') || '';
+          // Never cache HTML responses when asking for a JS file
+          if (!url.pathname.endsWith('.js') || contentType.includes('javascript')) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
         }
         return networkResponse;
       });

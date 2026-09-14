@@ -24,6 +24,10 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+    // Missing JS/CSS assets should return 404 instead of falling back to index.html (MIME mismatch)
+    app.get('/assets/*', (_req, res) => {
+      res.status(404).type('text/plain').send('Asset not found');
+    });
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

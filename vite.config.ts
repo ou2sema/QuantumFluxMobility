@@ -58,8 +58,14 @@ export default defineConfig(() => {
         devOptions: {
           enabled: false,
         },
+        workbox: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit to allow bundle precaching
+        },
       }),
     ],
+    build: {
+      chunkSizeWarningLimit: 1500,
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
