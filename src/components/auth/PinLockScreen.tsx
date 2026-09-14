@@ -76,6 +76,14 @@ const ROLE_INFO: Record<UserRole, { label: string; desc: string; color: string; 
   },
 };
 
+const TEST_PINS: Record<string, string> = {
+  'u-admin-oussema': '2846',
+  'u-admin-1': '9582',
+  'u-comptoir-1': '7419',
+  'u-technique-1': '6824',
+  'u-comptoir-2': '5293',
+};
+
 export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   onUnlocked,
   isModal = false,
@@ -293,10 +301,20 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono border ${roleMeta.color}`}>
                 {roleMeta.label}
               </span>
-              {selectedUser.id === 'u-admin-oussema' && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 bg-amber-500/20 border border-amber-500/40">
-                  PIN Test: <strong className="font-bold">2846</strong>
-                </span>
+              {TEST_PINS[selectedUser.id] && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const testPin = TEST_PINS[selectedUser.id];
+                    setPin(testPin);
+                    submitPin(testPin, selectedUser.id);
+                  }}
+                  className="px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                  title="Cliquer pour tester la connexion automatique"
+                >
+                  <span>PIN Test :</span>
+                  <strong className="font-bold underline">{TEST_PINS[selectedUser.id]}</strong>
+                </button>
               )}
             </div>
           </div>

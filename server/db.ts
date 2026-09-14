@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getFirestore,
+  setLogLevel,
   collection,
   doc,
   getDoc,
@@ -33,6 +34,7 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const rawDbId = firebaseConfig.firestoreDatabaseId;
 const dbId = (!rawDbId || rawDbId === 'default' || rawDbId === '(default)') ? '(default)' : rawDbId;
 export const serverDb: Firestore = dbId === '(default)' ? getFirestore(app) : getFirestore(app, dbId);
+setLogLevel('error');
 
 // In-memory mirror cache for unit-tests and offline fallback
 export const memoryUsers = new Map<string, ServerUserRecord>();
@@ -92,6 +94,8 @@ async function runWithFirestore<T>(op: () => Promise<T>, fallback: () => T | Pro
     const msg = err?.message || String(err);
     if (
       msg.includes('NOT_FOUND') ||
+      msg.includes('PERMISSION_DENIED') ||
+      msg.includes('permission') ||
       msg.includes('offline') ||
       msg.includes('timeout') ||
       msg.includes('stream') ||

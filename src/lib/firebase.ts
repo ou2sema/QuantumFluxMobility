@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getFirestore,
+  setLogLevel,
   collection,
   doc,
   setDoc,
@@ -39,6 +40,7 @@ export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfi
 const rawDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId;
 export const firestoreDatabaseId: string = (!rawDbId || rawDbId === 'default' || rawDbId === '(default)') ? '(default)' : rawDbId;
 export const db: Firestore = firestoreDatabaseId === '(default)' ? getFirestore(app) : getFirestore(app, firestoreDatabaseId);
+setLogLevel('error');
 
 // Initialize Firebase Auth & Providers
 export const auth = getAuth(app);

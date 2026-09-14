@@ -339,7 +339,7 @@ export async function authenticateWithPin(
   if (pin === '0000') {
     return {
       success: false,
-      error: 'Identifiants invalides.',
+      error: 'Code maître « 0000 » strictement interdit et désactivé pour des raisons de sécurité. Utilisez le code PIN individuel.',
       statusCode: 401,
     };
   }
