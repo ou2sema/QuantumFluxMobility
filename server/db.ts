@@ -67,7 +67,7 @@ export interface ServerUserCredential {
 
 // Helper to prevent hanging operations when Firestore database is offline or not found
 let isFirestoreOffline = false;
-const TIMEOUT_MS = 400;
+const TIMEOUT_MS = 2500;
 
 function withTimeout<T>(promise: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
   let timer: NodeJS.Timeout;
@@ -77,6 +77,7 @@ function withTimeout<T>(promise: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
   return Promise.race([
     promise.then((res) => {
       clearTimeout(timer);
+      isFirestoreOffline = false;
       return res;
     }),
     timeoutPromise,
@@ -91,26 +92,16 @@ async function runWithFirestore<T>(op: () => Promise<T>, fallback: () => T | Pro
     const res = await withTimeout(op(), TIMEOUT_MS);
     return res;
   } catch (err: any) {
-    const msg = err?.message || String(err);
-    if (
-      msg.includes('NOT_FOUND') ||
-      msg.includes('PERMISSION_DENIED') ||
-      msg.includes('permission') ||
-      msg.includes('offline') ||
-      msg.includes('timeout') ||
-      msg.includes('stream') ||
-      msg.includes('Could not reach')
-    ) {
-      isFirestoreOffline = true;
-    }
+    isFirestoreOffline = true;
     return fallback();
   }
 }
 
-// Helper: Get user profile by ID
+// Helper: Get user profile by ID or email
 export async function getUserProfile(userId: string): Promise<ServerUserRecord | null> {
   return runWithFirestore(
     async () => {
+      // 1. Direct ID lookup
       const snap = await getDoc(doc(serverDb, 'appUsers', userId));
       if (snap.exists()) {
         const data = snap.data();
@@ -119,10 +110,37 @@ export async function getUserProfile(userId: string): Promise<ServerUserRecord |
           ...(safeData as ServerUserRecord),
           id: snap.id,
           pinConfigured: Boolean(safeData.pinConfigured || pinCode || pinHash),
-        };
+          ...(pinCode ? { rawPinCode: String(pinCode) } : {}),
+        } as any;
         memoryUsers.set(userId, profile);
         return profile;
       }
+
+      // 2. Lookup in all docs if email or alias
+      const allSnap = await getDocs(collection(serverDb, 'appUsers'));
+      if (!allSnap.empty) {
+        const term = userId.trim().toLowerCase();
+        for (const d of allSnap.docs) {
+          const dData = d.data() as any;
+          if (
+            d.id.toLowerCase() === term ||
+            (dData.email && dData.email.toLowerCase() === term) ||
+            (dData.name && dData.name.toLowerCase().includes(term))
+          ) {
+            const { pinCode, pinHash, ...safeData } = dData;
+            const profile: ServerUserRecord = {
+              ...(safeData as ServerUserRecord),
+              id: d.id,
+              pinConfigured: Boolean(safeData.pinConfigured || pinCode || pinHash),
+              ...(pinCode ? { rawPinCode: String(pinCode) } : {}),
+            } as any;
+            memoryUsers.set(userId, profile);
+            memoryUsers.set(d.id, profile);
+            return profile;
+          }
+        }
+      }
+
       return memoryUsers.get(userId) || null;
     },
     () => memoryUsers.get(userId) || null

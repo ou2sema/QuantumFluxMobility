@@ -266,6 +266,14 @@ async function runTests() {
   // 8. Oussema Admin User Verification
   // -----------------------------------------------------------
   console.log('\n[TEST GROUP 8] Dedicated Admin User (Oussema) Verification:');
+  const oussemaPin1234Auth = await authenticateWithPin('io3PHq8KUxd1SonX2y2ajiYSulj1', '1234', '127.0.0.1');
+  assert(oussemaPin1234Auth.success === true, 'Oussema (io3PHq8KUxd1SonX2y2ajiYSulj1) authenticates with PIN 1234 from Firestore');
+  assert(oussemaPin1234Auth.user?.email === 'ou2sema@gmail.com', 'Oussema email is ou2sema@gmail.com');
+  assert(oussemaPin1234Auth.user?.role === 'ADMIN', 'Oussema has ADMIN role');
+
+  const oussemaAlias1234 = await authenticateWithPin('u-admin-oussema', '1234', '127.0.0.1');
+  assert(oussemaAlias1234.success === true, 'Oussema (u-admin-oussema) authenticates with PIN 1234');
+
   const oussemaAuth = await authenticateWithPin('u-admin-oussema', '2846', '127.0.0.1');
   assert(oussemaAuth.success === true, 'Oussema (u-admin-oussema) authenticates with PIN 2846');
   assert(oussemaAuth.user?.email === 'ou2sema@gmail.com', 'Oussema email is ou2sema@gmail.com');

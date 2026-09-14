@@ -2,6 +2,18 @@ import { Agency, AppNotification, Booking, CheckIn, CheckOut, Client, ExtraItem,
 
 export const MOCK_USERS: User[] = [
   {
+    id: 'io3PHq8KUxd1SonX2y2ajiYSulj1',
+    name: 'oussema Hadj abdallah',
+    email: 'ou2sema@gmail.com',
+    role: 'ADMIN',
+    agencyId: 'agency-tunis-carthage',
+    phone: '+216 98 123 456',
+    pinConfigured: true,
+    jobTitle: 'Super Administrateur & Directeur Général',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
     id: 'u-admin-oussema',
     name: 'Oussema (Admin)',
     email: 'ou2sema@gmail.com',

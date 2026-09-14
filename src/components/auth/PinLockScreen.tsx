@@ -77,7 +77,8 @@ const ROLE_INFO: Record<UserRole, { label: string; desc: string; color: string; 
 };
 
 const TEST_PINS: Record<string, string> = {
-  'u-admin-oussema': '2846',
+  'io3PHq8KUxd1SonX2y2ajiYSulj1': '1234',
+  'u-admin-oussema': '1234',
   'u-admin-1': '9582',
   'u-comptoir-1': '7419',
   'u-technique-1': '6824',
@@ -86,15 +87,16 @@ const TEST_PINS: Record<string, string> = {
 
 const getTestPinForUser = (user?: User | null): string | null => {
   if (!user) return null;
+  if ((user as any).pinCode) return String((user as any).pinCode);
   if (user.id && TEST_PINS[user.id]) return TEST_PINS[user.id];
   const email = (user.email || '').toLowerCase();
   const name = (user.name || '').toLowerCase();
-  if (email === 'ou2sema@gmail.com' || name.includes('oussema')) return '2846';
+  if (email === 'ou2sema@gmail.com' || name.includes('oussema')) return '1234';
   if (email === 'admin@autofleet.fr') return '9582';
   if (email === 'k.benali@autofleet.fr') return '7419';
   if (email === 'n.mejri@autofleet.fr') return '6824';
   if (email === 's.martin@autofleet.fr') return '5293';
-  return null;
+  return '1234';
 };
 
 export const PinLockScreen: React.FC<PinLockScreenProps> = ({
