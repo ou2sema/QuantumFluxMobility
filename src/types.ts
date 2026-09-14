@@ -5,7 +5,8 @@ export type UserRole =
   | 'FLEET' 
   | 'ACCOUNTANT'
   | 'AGENT_COMPTOIR' 
-  | 'AGENT_TECHNIQUE';
+  | 'AGENT_TECHNIQUE'
+  | 'CUSTOMER';
 
 export type VehicleStatus = 
   | 'AVAILABLE' 
@@ -64,7 +65,7 @@ export interface User {
   email: string;
   role: UserRole;
   agencyId: string;
-  pinCode: string; // 4 or 6 digits PIN for security access
+  pinConfigured?: boolean; // Secure server-side credential status
   avatarUrl?: string;
   phone?: string;
   jobTitle?: string;
@@ -230,6 +231,14 @@ export interface Booking {
   invoiceNumber?: string;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  cancellationFee?: number;
+  refundAmount?: number;
+  paidAmount?: number;
+  cancelledBy?: string;
+  agreementSigned?: boolean;
 }
 
 export interface MandatoryPhotos {

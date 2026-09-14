@@ -50,6 +50,27 @@ export const BottomNav: React.FC = () => {
     navigate(id === 'client_portal' ? '/portal' : `/${id}`);
   };
 
+  const getCompactLabel = (id: string, fullLabel: string) => {
+    switch (id) {
+      case 'dashboard':
+        return 'Bord';
+      case 'bookings':
+        return 'Résas';
+      case 'calendar':
+        return 'Agenda';
+      case 'fleet':
+        return 'Flotte';
+      case 'maintenance':
+        return 'Atelier';
+      case 'clients':
+        return 'Clients';
+      case 'reports':
+        return 'Stats';
+      default:
+        return fullLabel;
+    }
+  };
+
   return (
     <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D1224]/95 backdrop-blur-md border-t border-gray-800 pb-safe px-1.5 sm:px-3 py-1.5 sm:py-2 select-none shadow-2xl">
       <div className="max-w-4xl mx-auto flex items-center justify-between gap-1 sm:gap-2">
@@ -77,7 +98,7 @@ export const BottomNav: React.FC = () => {
                 role="menuitem"
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => handleNavClick(item.id)}
-                className={`min-h-[48px] sm:min-h-[46px] px-1 sm:px-3 py-1 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all duration-150 active:scale-95 cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none ${
+                className={`min-h-[48px] sm:min-h-[46px] px-1 sm:px-3 py-1 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 transition-all duration-150 active:scale-95 cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none ${
                   isActive
                     ? 'bg-blue-600 text-white font-black shadow-lg shadow-blue-600/30'
                     : 'text-gray-400 hover:text-white hover:bg-gray-800/60 font-bold'
@@ -85,7 +106,10 @@ export const BottomNav: React.FC = () => {
                 title={item.label}
               >
                 <Icon className={`w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                <span className="text-[9px] sm:text-xs uppercase tracking-wider font-mono truncate max-w-full">
+                <span className="sm:hidden text-[8.5px] uppercase tracking-tight font-bold leading-none text-center">
+                  {getCompactLabel(item.id, item.label)}
+                </span>
+                <span className="hidden sm:inline text-xs uppercase tracking-wider font-mono truncate max-w-full">
                   {item.label}
                 </span>
               </button>

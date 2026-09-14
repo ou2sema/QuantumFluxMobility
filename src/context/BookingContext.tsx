@@ -23,6 +23,14 @@ interface BookingContextType {
   completeCheckOut: (checkOutData: Omit<CheckOut, 'id' | 'timestamp'>) => CheckOut;
   extras: ExtraItem[];
   generateInvoice: (bookingId: string) => Invoice;
+  updateBooking: (updatedBooking: Booking) => void;
+  cancelBooking: (
+    bookingId: string,
+    reason?: string,
+    refundAmount?: number,
+    cancellationFee?: number,
+    cancelledBy?: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -110,7 +118,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setBookings((prev) => [newBooking, ...prev]);
       setFirestoreDoc('bookings', id, newBooking).catch(() => {});
-      updateVehicleStatus(newBooking.vehicleId, 'RESERVED');
+      setTimeout(() => {
+        updateVehicleStatus(newBooking.vehicleId, 'RESERVED');
+      }, 0);
 
       toast.success(`Réservation ${bookingNumber} créée avec succès (véhicule réservé)`);
       return newBooking;
@@ -127,13 +137,15 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const targetBk = bookings.find((b) => b.id === bookingId);
       if (targetBk) {
-        if (status === 'CANCELLED' || status === 'COMPLETED') {
-          updateVehicleStatus(targetBk.vehicleId, 'AVAILABLE');
-        } else if (status === 'IN_PROGRESS') {
-          updateVehicleStatus(targetBk.vehicleId, 'RENTED');
-        } else if (status === 'CONFIRMED') {
-          updateVehicleStatus(targetBk.vehicleId, 'RESERVED');
-        }
+        setTimeout(() => {
+          if (status === 'CANCELLED' || status === 'COMPLETED') {
+            updateVehicleStatus(targetBk.vehicleId, 'AVAILABLE');
+          } else if (status === 'IN_PROGRESS') {
+            updateVehicleStatus(targetBk.vehicleId, 'RENTED');
+          } else if (status === 'CONFIRMED') {
+            updateVehicleStatus(targetBk.vehicleId, 'RESERVED');
+          }
+        }, 0);
       }
 
       toast.info(`Statut de la réservation mis à jour : ${status}`);
@@ -156,7 +168,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           prev.map((b) => (b.id === booking.id ? updatedBooking : b))
         );
         setFirestoreDoc('bookings', booking.id, { status: 'CANCELLED' }).catch(() => {});
-        updateVehicleStatus(booking.vehicleId, 'AVAILABLE');
+        setTimeout(() => {
+          updateVehicleStatus(booking.vehicleId, 'AVAILABLE');
+        }, 0);
 
         toast.warning(
           `Réservation ${booking.bookingNumber} annulée automatiquement : départ dépassé sans check-in. Véhicule ${booking.vehicleName || ''} libéré.`
@@ -173,7 +187,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           prev.map((b) => (b.id === booking.id ? updatedBooking : b))
         );
         setFirestoreDoc('bookings', booking.id, { status: 'COMPLETED' }).catch(() => {});
-        updateVehicleStatus(booking.vehicleId, 'AVAILABLE');
+        setTimeout(() => {
+          updateVehicleStatus(booking.vehicleId, 'AVAILABLE');
+        }, 0);
 
         toast.success(
           `Réservation ${booking.bookingNumber} clôturée automatiquement : fin de contrat atteinte. Véhicule ${booking.vehicleName || ''} libéré.`
@@ -190,6 +206,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Batch sweep for all bookings in current state
   const checkAllBookingsLifecycle = useCallback((): number => {
     const today = new Date().toISOString().split('T')[0];
+    const vehiclesToRelease: string[] = [];
     let changedCount = 0;
 
     setBookings((prev) => {
@@ -198,15 +215,15 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if ((b.status === 'CONFIRMED' || b.status === 'PENDING') && b.startDate < today) {
           hasChanges = true;
           changedCount++;
+          vehiclesToRelease.push(b.vehicleId);
           setFirestoreDoc('bookings', b.id, { status: 'CANCELLED' }).catch(() => {});
-          updateVehicleStatus(b.vehicleId, 'AVAILABLE');
           return { ...b, status: 'CANCELLED' as const };
         }
         if (b.status === 'IN_PROGRESS' && b.endDate <= today) {
           hasChanges = true;
           changedCount++;
+          vehiclesToRelease.push(b.vehicleId);
           setFirestoreDoc('bookings', b.id, { status: 'COMPLETED' }).catch(() => {});
-          updateVehicleStatus(b.vehicleId, 'AVAILABLE');
           return { ...b, status: 'COMPLETED' as const };
         }
         return b;
@@ -214,6 +231,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return hasChanges ? nextBookings : prev;
     });
+
+    if (vehiclesToRelease.length > 0) {
+      setTimeout(() => {
+        vehiclesToRelease.forEach((vId) => {
+          updateVehicleStatus(vId, 'AVAILABLE');
+        });
+      }, 0);
+    }
 
     return changedCount;
   }, [updateVehicleStatus]);
@@ -239,8 +264,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       );
       setFirestoreDoc('bookings', checkIn.bookingId, { status: 'IN_PROGRESS', checkInId: checkIn.id }).catch(() => {});
 
-      // Mark vehicle as rented
-      updateVehicleStatus(checkIn.vehicleId, 'RENTED');
+      // Mark vehicle as rented in separate task
+      setTimeout(() => {
+        updateVehicleStatus(checkIn.vehicleId, 'RENTED');
+      }, 0);
       setSelectedBookingForCheckIn(null);
 
       toast.success(`Départ validé pour la réservation ${checkIn.bookingNumber}`);
@@ -270,8 +297,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       );
       setFirestoreDoc('bookings', checkOut.bookingId, { status: 'COMPLETED', checkOutId: checkOut.id }).catch(() => {});
 
-      // Return vehicle to AVAILABLE
-      updateVehicleStatus(checkOut.vehicleId, 'AVAILABLE');
+      // Return vehicle to AVAILABLE in separate task
+      setTimeout(() => {
+        updateVehicleStatus(checkOut.vehicleId, 'AVAILABLE');
+      }, 0);
       setSelectedBookingForCheckOut(null);
 
       toast.success(`Retour clôturé pour la réservation ${checkOut.bookingNumber}`);
@@ -332,11 +361,109 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [bookings, clients, vehicles, extras, currentAgency]
   );
 
+  const updateBooking = useCallback(
+    (updatedBooking: Booking) => {
+      setBookings((prev) =>
+        prev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b))
+      );
+      setFirestoreDoc('bookings', updatedBooking.id, updatedBooking).catch((e) =>
+        console.warn('Failed to sync updated booking to Firestore:', e)
+      );
+    },
+    []
+  );
+
+  const cancelBooking = useCallback(
+    async (
+      bookingId: string,
+      reason: string = 'Annulation manuelle',
+      refundAmount?: number,
+      cancellationFee?: number,
+      cancelledBy: string = 'Agent'
+    ): Promise<{ success: boolean; error?: string }> => {
+      const targetBk = bookings.find((b) => b.id === bookingId);
+      if (!targetBk) {
+        return { success: false, error: 'Réservation introuvable' };
+      }
+
+      const cancelledAt = new Date().toISOString();
+      const updatedBooking: Booking = {
+        ...targetBk,
+        status: 'CANCELLED',
+        cancellationReason: reason,
+        cancelledAt,
+        cancelledBy,
+        cancellationFee: cancellationFee !== undefined ? cancellationFee : targetBk.cancellationFee,
+        refundAmount: refundAmount !== undefined ? refundAmount : targetBk.refundAmount,
+        paymentStatus:
+          refundAmount !== undefined && refundAmount > 0
+            ? refundAmount >= (targetBk.paidAmount || targetBk.totalAmount)
+              ? 'REFUNDED'
+              : 'PARTIALLY_PAID'
+            : targetBk.paymentStatus === 'PAID'
+            ? 'PAID'
+            : 'CANCELLED',
+        notes: targetBk.notes
+          ? `${targetBk.notes}\n[Annulé le ${new Date().toLocaleDateString('fr-FR')}: ${reason}]`
+          : `[Annulé le ${new Date().toLocaleDateString('fr-FR')}: ${reason}]`,
+        updatedAt: cancelledAt,
+      };
+
+      setBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? updatedBooking : b))
+      );
+
+      try {
+        await setFirestoreDoc('bookings', bookingId, updatedBooking);
+      } catch (e) {
+        console.warn('Failed to sync cancelled booking to Firestore:', e);
+      }
+
+      // Automatically release the vehicle back to AVAILABLE
+      if (targetBk.vehicleId) {
+        const vId = targetBk.vehicleId;
+        setTimeout(() => {
+          updateVehicleStatus(vId, 'AVAILABLE');
+        }, 0);
+        const vehicle = vehicles.find((v) => v.id === vId);
+        if (vehicle) {
+          try {
+            await setFirestoreDoc('vehicles', vehicle.id, {
+              ...vehicle,
+              status: 'AVAILABLE',
+            });
+          } catch (e) {}
+        }
+      }
+
+      if (selectedBookingForCheckIn?.id === bookingId) {
+        setSelectedBookingForCheckIn(null);
+      }
+      if (selectedBookingForCheckOut?.id === bookingId) {
+        setSelectedBookingForCheckOut(null);
+      }
+
+      toast.success(
+        `Réservation ${targetBk.bookingNumber} annulée avec succès. Véhicule ${targetBk.vehicleName || ''} libéré.`
+      );
+      return { success: true };
+    },
+    [
+      bookings,
+      vehicles,
+      updateVehicleStatus,
+      selectedBookingForCheckIn,
+      selectedBookingForCheckOut,
+      toast,
+    ]
+  );
+
   return (
     <BookingContext.Provider
       value={{
         bookings,
         addBooking,
+        updateBooking,
         updateBookingStatus,
         checkAndAutoUpdateBooking,
         checkAllBookingsLifecycle,
@@ -350,6 +477,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         completeCheckOut,
         extras,
         generateInvoice,
+        cancelBooking,
       }}
     >
       {children}

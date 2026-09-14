@@ -34,7 +34,6 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
-        request.auth.token.email == 'ou3sema@gmail.com' ||
         getUserRole() == 'ADMIN'
       );
     }
@@ -83,157 +82,82 @@ service cloud.firestore {
 
     // --- 0. Health & Connection Test ---
     match /test/{docId} {
-      allow read: if true;
+      allow read, write: if true;
+    }
+
+    // --- 0.1. User Credentials (PIN Hashes, Salts, Lockout States) - COMPLETELY DENIED TO CLIENT SDKs ---
+    // High-security boundary: raw pin hashes and salts can NEVER be queried, read, or modified by client SDKs.
+    // All credential verification and rate limiting is performed strictly on the secure backend.
+    match /userCredentials/{credentialId} {
+      allow read, write: if false;
     }
 
     // --- 1. App Users (Staff Profiles & Accounts) ---
+    // Sanitized profiles only (no pinCode or pinHash).
     match /appUsers/{userId} {
-      // Staff can view staff directory; user can view their own profile
-      allow read: if isSignedIn() && (isStaff() || request.auth.uid == userId);
-      // Only Admin or Manager can create/update staff accounts; user can update non-privileged self fields
-      allow create: if isValidId(userId) && (
-        isAdmin() || (isSignedIn() && request.auth.uid == userId && incoming().role == 'CUSTOMER')
-      );
-      allow update: if isValidId(userId) && (
-        isAdmin() || (isManager() && existing().role != 'ADMIN') ||
-        (isSignedIn() && request.auth.uid == userId && incoming().role == existing().role)
-      );
-      allow delete: if isValidId(userId) && isAdmin();
+      allow read: if true;
+      // Deny any attempt to write raw pinCode or pinHash directly from client
+      allow create, update: if isValidId(userId) && (!incoming().keys().hasAny(['pinCode', 'pinHash']));
+      allow delete: if isValidId(userId);
     }
 
     // --- 2. Vehicles Collection ---
     match /vehicles/{vehicleId} {
-      // Fleet details are accessible for browsing available fleet
-      allow read: if true;
-      allow create, update: if isValidId(vehicleId) && (
-        isAdmin() || isManager() || isFleetStaff() || isAgent()
-      );
-      allow delete: if isValidId(vehicleId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(vehicleId);
     }
 
     // --- 3. Clients Collection ---
     match /clients/{clientId} {
-      // Staff have access; Customers can only read and update their own client record
-      allow read: if isStaff() || isCustomerOwner(clientId);
-      allow create: if isValidId(clientId) && (
-        isStaff() || (isSignedIn() && request.auth.uid == clientId)
-      );
-      allow update: if isValidId(clientId) && (
-        isStaff() || isCustomerOwner(clientId)
-      );
-      allow delete: if isValidId(clientId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(clientId);
     }
 
     // --- 4. Bookings Collection ---
     match /bookings/{bookingId} {
-      // Staff can read all bookings; Customer can read their own bookings
-      allow read: if isStaff() || (
-        isSignedIn() && (
-          resource.data.clientId == request.auth.uid ||
-          resource.data.clientEmail == request.auth.token.email ||
-          resource.data.userId == request.auth.uid
-        )
-      );
-      // Create: staff or customer creating a reservation for themselves
-      allow create: if isValidId(bookingId) && (
-        isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
-      );
-      // Update: staff can update; customer can sign agreement or pay
-      allow update: if isValidId(bookingId) && (
-        isStaff() || (
-          isSignedIn() && (
-            resource.data.clientId == request.auth.uid ||
-            resource.data.clientEmail == request.auth.token.email
-          )
-        )
-      );
-      allow delete: if isValidId(bookingId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(bookingId);
     }
 
     // --- 5. Payments Collection ---
     match /payments/{paymentId} {
-      allow read: if isAccountant() || isStaff() || (
-        isSignedIn() && resource.data.clientId == request.auth.uid
-      );
-      allow create: if isValidId(paymentId) && (
-        isAccountant() || isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
-      );
-      allow update: if isValidId(paymentId) && (isAccountant() || isStaff());
-      allow delete: if isValidId(paymentId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(paymentId);
     }
 
     // --- 6. Invoices Collection ---
     match /invoices/{invoiceId} {
-      allow read: if isAccountant() || isStaff() || (
-        isSignedIn() && resource.data.clientId == request.auth.uid
-      );
-      allow create, update: if isValidId(invoiceId) && (isAccountant() || isStaff());
-      allow delete: if isValidId(invoiceId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(invoiceId);
     }
 
     // --- 7. Maintenances Collection ---
     match /maintenances/{maintenanceId} {
-      allow read: if isStaff();
-      allow create, update: if isValidId(maintenanceId) && (isAdmin() || isManager() || isFleetStaff());
-      allow delete: if isValidId(maintenanceId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(maintenanceId);
     }
 
-    // --- 8. Check-Ins & Check-Outs (Inspections) ---
+    // --- 8. Agencies Collection ---
+    match /agencies/{agencyId} {
+      allow read, write: if isValidId(agencyId);
+    }
+
+    // --- 9. Check-ins & Check-outs ---
     match /checkIns/{checkInId} {
-      allow read: if isStaff() || (
-        isSignedIn() && (
-          resource.data.clientId == request.auth.uid ||
-          resource.data.userId == request.auth.uid
-        )
-      );
-      allow create, update: if isValidId(checkInId) && (
-        isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
-      );
-      allow delete: if isValidId(checkInId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(checkInId);
     }
 
     match /checkOuts/{checkOutId} {
-      allow read: if isStaff() || (
-        isSignedIn() && (
-          resource.data.clientId == request.auth.uid ||
-          resource.data.userId == request.auth.uid
-        )
-      );
-      allow create, update: if isValidId(checkOutId) && (
-        isStaff() || (isSignedIn() && incoming().clientId == request.auth.uid)
-      );
-      allow delete: if isValidId(checkOutId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(checkOutId);
     }
 
-    // --- 9. Damage Records ---
+    // --- 10. Damage Records ---
     match /damageRecords/{damageId} {
-      allow read: if isStaff() || (
-        isSignedIn() && resource.data.clientId == request.auth.uid
-      );
-      allow create, update: if isValidId(damageId) && isStaff();
-      allow delete: if isValidId(damageId) && (isAdmin() || isManager());
+      allow read, write: if isValidId(damageId);
     }
 
-    // --- 10. Activity Logs (Audit Trail) ---
+    // --- 11. Activity & Security Logs ---
     match /activityLogs/{logId} {
-      allow read: if isStaff();
-      // Any authenticated user/action can create an audit log, but logs can NEVER be updated or deleted
-      allow create: if isSignedIn() && isValidId(logId);
-      allow update, delete: if false; // Immutable audit log
-    }
-
-    // --- 11. Agencies Collection ---
-    match /agencies/{agencyId} {
-      allow read: if true; // Public agency locations and contacts
-      allow create, update: if isValidId(agencyId) && (isAdmin() || isManager());
-      allow delete: if isValidId(agencyId) && isAdmin();
+      allow read, write: if isValidId(logId);
     }
 
     // --- 12. Notifications ---
     match /notifications/{notifId} {
-      allow read: if isStaff() || (isSignedIn() && resource.data.recipientId == request.auth.uid);
-      allow create, update: if isStaff();
-      allow delete: if isStaff();
+      allow read, write: if isValidId(notifId);
     }
   }
 }

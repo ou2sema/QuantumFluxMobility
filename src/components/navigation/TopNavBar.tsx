@@ -82,6 +82,12 @@ const ROLE_LABELS: Record<UserRole, { title: string; subtitle: string; color: st
     color: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     icon: Wrench,
   },
+  CUSTOMER: {
+    title: 'Client Privilège',
+    subtitle: 'Espace locataire & réservations',
+    color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+    icon: Users,
+  },
 };
 
 export const TopNavBar: React.FC = () => {

@@ -19,6 +19,8 @@ export const bookingFormSchema = z
     clientId: z.string().min(1, 'Veuillez sélectionner ou créer un client'),
     startDate: z.string().min(1, 'Date de départ requise'),
     endDate: z.string().min(1, 'Date de retour requise'),
+    startTime: z.string().optional(),
+    endTime: z.string().optional(),
     pickupLocation: z.string().min(1, 'Lieu de prise en charge requis'),
     returnLocation: z.string().min(1, 'Lieu de restitution requis'),
     insuranceTier: z.enum(['BASIC', 'STANDARD', 'PREMIUM']),

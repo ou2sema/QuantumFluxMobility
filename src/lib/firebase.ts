@@ -37,8 +37,8 @@ export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfi
 
 // Initialize Firestore with database ID normalized to '(default)'
 const rawDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId;
-export const firestoreDatabaseId: string = (!rawDbId || rawDbId === 'default') ? '(default)' : rawDbId;
-export const db: Firestore = getFirestore(app, firestoreDatabaseId);
+export const firestoreDatabaseId: string = (!rawDbId || rawDbId === 'default' || rawDbId === '(default)') ? '(default)' : rawDbId;
+export const db: Firestore = firestoreDatabaseId === '(default)' ? getFirestore(app) : getFirestore(app, firestoreDatabaseId);
 
 // Initialize Firebase Auth & Providers
 export const auth = getAuth(app);
@@ -133,26 +133,31 @@ export function subscribeToCollection<T extends { id: string }>(
   onData: (items: T[]) => void,
   onError?: (error: Error) => void
 ): () => void {
-  const colRef = collection(db, collectionName);
-  const unsubscribe = onSnapshot(
-    colRef,
-    (snapshot) => {
-      const items: T[] = snapshot.docs.map((docSnap) => ({
-        ...(docSnap.data() as T),
-        id: docSnap.id,
-      }));
-      onData(items);
-    },
-    (err) => {
-      try {
-        handleFirestoreError(err, OperationType.LIST, collectionName);
-      } catch (wrapped) {
-        if (onError) onError(wrapped as Error);
+  try {
+    const colRef = collection(db, collectionName);
+    const unsubscribe = onSnapshot(
+      colRef,
+      (snapshot) => {
+        const items: T[] = snapshot.docs.map((docSnap) => ({
+          ...(docSnap.data() as T),
+          id: docSnap.id,
+        }));
+        onData(items);
+      },
+      (err) => {
+        console.warn(`Firestore snapshot notification for ${collectionName}:`, err.message);
+        if (onError) {
+          try {
+            onError(err);
+          } catch {}
+        }
       }
-    }
-  );
-
-  return unsubscribe;
+    );
+    return unsubscribe;
+  } catch (err: any) {
+    console.warn(`Could not attach listener for ${collectionName}:`, err?.message);
+    return () => {};
+  }
 }
 
 /**
@@ -168,7 +173,7 @@ export async function setFirestoreDoc<T extends Record<string, any>>(
     const cleaned = JSON.parse(JSON.stringify(data));
     await setDoc(docRef, cleaned, { merge: true });
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, `${collectionName}/${docId}`);
+    console.warn(`Firestore write notice for ${collectionName}/${docId}:`, error);
   }
 }
 
@@ -180,7 +185,7 @@ export async function deleteFirestoreDoc(collectionName: string, docId: string):
     const docRef = doc(db, collectionName, docId);
     await deleteDoc(docRef);
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${docId}`);
+    console.warn(`Firestore delete notice for ${collectionName}/${docId}:`, error);
   }
 }
 

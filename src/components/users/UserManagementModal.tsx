@@ -52,7 +52,7 @@ const ROLE_OPTIONS: { role: UserRole; title: string; desc: string; badgeColor: s
 ];
 
 export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClose }) => {
-  const { users, addUser, updateUser, deleteUser, currentUser, currentAgency } = useApp();
+  const { users, addUser, updateUser, deleteUser, resetUserPin, currentUser, currentAgency } = useApp();
   const { isAdmin } = useAuth();
 
   const [isAddingUser, setIsAddingUser] = useState(false);
@@ -73,7 +73,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
   // Edit PIN State
   const [tempPin, setTempPin] = useState('');
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setFormError('Le nom de l\'utilisateur est obligatoire.');
@@ -87,38 +87,58 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClos
       setFormError('Le code PIN doit contenir uniquement des chiffres.');
       return;
     }
+    if (/^(\d)\1+$/.test(pinCode) || ['1234', '4321', '0000'].includes(pinCode)) {
+      setFormError('Ce code PIN est trop prévisible (ex: 0000, 1111, 1234). Veuillez choisir un code PIN plus sûr.');
+      return;
+    }
 
-    addUser({
-      name: name.trim(),
-      email: email.trim() || `${name.toLowerCase().replace(/\s+/g, '.')}@autofleet.fr`,
-      phone: phone.trim() || '+33 6 00 00 00 00',
-      role,
-      pinCode: pinCode.trim(),
-      agencyId: currentAgency.id,
-      jobTitle: jobTitle.trim() || ROLE_OPTIONS.find(r => r.role === role)?.title,
-      avatarUrl: newUserAvatar.trim() || undefined,
-      active: true,
-    });
+    try {
+      await addUser({
+        name: name.trim(),
+        email: email.trim() || `${name.toLowerCase().replace(/\s+/g, '.')}@autofleet.fr`,
+        phone: phone.trim() || '+33 6 00 00 00 00',
+        role,
+        pinCode: pinCode.trim(),
+        agencyId: currentAgency.id,
+        jobTitle: jobTitle.trim() || ROLE_OPTIONS.find(r => r.role === role)?.title,
+        avatarUrl: newUserAvatar.trim() || undefined,
+        active: true,
+      });
 
-    // Reset
-    setName('');
-    setEmail('');
-    setPhone('');
-    setPinCode('');
-    setJobTitle('');
-    setNewUserAvatar('');
-    setFormError(null);
-    setIsAddingUser(false);
+      // Reset
+      setName('');
+      setEmail('');
+      setPhone('');
+      setPinCode('');
+      setJobTitle('');
+      setNewUserAvatar('');
+      setFormError(null);
+      setIsAddingUser(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Erreur lors de la création de l\'utilisateur.');
+    }
   };
 
-  const handleSavePin = (userId: string) => {
+  const handleSavePin = async (userId: string) => {
     if (!tempPin || tempPin.length < 4 || !/^\d+$/.test(tempPin)) {
       alert('Le code PIN doit comporter au moins 4 chiffres.');
       return;
     }
-    updateUser(userId, { pinCode: tempPin });
-    setEditingUserId(null);
-    setTempPin('');
+    if (/^(\d)\1+$/.test(tempPin) || ['1234', '4321', '0000'].includes(tempPin)) {
+      alert('Ce code PIN est trop prévisible (ex: 0000, 1111, 1234). Veuillez choisir un code PIN plus sûr.');
+      return;
+    }
+    try {
+      if (resetUserPin) {
+        await resetUserPin(userId, tempPin);
+      } else {
+        await updateUser(userId, { pinConfigured: true });
+      }
+      setEditingUserId(null);
+      setTempPin('');
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la mise à jour du code PIN.');
+    }
   };
 
   return (

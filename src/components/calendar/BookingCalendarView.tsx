@@ -64,8 +64,11 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDateStr, setSelectedDateStr] = useState<string>(todayStr);
 
-  // Cell expansion state: on clicking a cell, it expands smoothly to prevent saturation and give full access to multiple reservations
+  // Cell expansion state: on clicking a cell on desktop, it expands smoothly
   const [expandedDateStr, setExpandedDateStr] = useState<string | null>(null);
+
+  // Mobile day bottom sheet drawer state
+  const [isMobileDaySheetOpen, setIsMobileDaySheetOpen] = useState(false);
 
   const [activeBookingModal, setActiveBookingModal] = useState<Booking | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -74,13 +77,14 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
   // Close expanded cell when pressing Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && expandedDateStr) {
-        setExpandedDateStr(null);
+      if (e.key === 'Escape') {
+        if (expandedDateStr) setExpandedDateStr(null);
+        if (isMobileDaySheetOpen) setIsMobileDaySheetOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [expandedDateStr]);
+  }, [expandedDateStr, isMobileDaySheetOpen]);
 
   // Automated lifecycle sweep on calendar load:
   // - Overdue confirmed bookings without checkin -> auto CANCEL & vehicle AVAILABLE
@@ -93,10 +97,17 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
     }
   }, [checkAllBookingsLifecycle]);
 
-  // Toggle cell expansion on cell click
+  // Handle cell click on calendar:
+  // - On mobile (< 768px): Select date and open dedicated mobile day sheet drawer
+  // - On desktop (>= 768px): Toggle inline expanded popover
   const handleCellClick = (dateStr: string) => {
     setSelectedDateStr(dateStr);
-    setExpandedDateStr((prev) => (prev === dateStr ? null : dateStr));
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsMobileDaySheetOpen(true);
+      setExpandedDateStr(null);
+    } else {
+      setExpandedDateStr((prev) => (prev === dateStr ? null : dateStr));
+    }
   };
 
   // Click on reservation:
@@ -134,7 +145,11 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
     setCurrentDate(now);
     const dateToday = now.toISOString().split('T')[0];
     setSelectedDateStr(dateToday);
-    setExpandedDateStr(dateToday);
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setExpandedDateStr(dateToday);
+    } else {
+      setExpandedDateStr(null);
+    }
   };
 
   // Month grid calculation
@@ -481,30 +496,54 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                   }}
                   className={`group rounded-xl border transition-colors select-none relative ${
                     isExpanded
-                      ? 'z-30 min-h-[290px] sm:min-h-[320px] md:min-h-[360px] bg-slate-900 border-2 border-blue-500 ring-4 ring-blue-500/25 shadow-2xl shadow-blue-950/80 p-2.5 sm:p-3 cursor-default'
+                      ? 'md:z-30 min-h-[60px] sm:min-h-[72px] md:min-h-[360px] bg-slate-900 border-2 border-blue-500 ring-2 md:ring-4 ring-blue-500/25 shadow-2xl shadow-blue-950/80 p-1.5 sm:p-2 md:p-3 cursor-default'
                       : isSelected
-                      ? 'z-10 min-h-[64px] sm:min-h-[85px] md:min-h-[110px] bg-blue-950/50 border-cyan-400 ring-2 ring-cyan-400/50 shadow-md shadow-cyan-950/50 p-1.5 sm:p-2 cursor-pointer hover:border-cyan-300'
+                      ? 'z-10 min-h-[60px] sm:min-h-[72px] md:min-h-[110px] bg-blue-950/50 border-cyan-400 ring-2 ring-cyan-400/50 shadow-md shadow-cyan-950/50 p-1.5 sm:p-2 cursor-pointer hover:border-cyan-300'
                       : isToday
-                      ? 'z-10 min-h-[64px] sm:min-h-[85px] md:min-h-[110px] bg-blue-950/30 border-blue-500/80 shadow-sm p-1.5 sm:p-2 cursor-pointer hover:border-blue-400'
-                      : 'z-10 min-h-[64px] sm:min-h-[85px] md:min-h-[110px] bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:bg-slate-850 p-1.5 sm:p-2 cursor-pointer'
+                      ? 'z-10 min-h-[60px] sm:min-h-[72px] md:min-h-[110px] bg-blue-950/30 border-blue-500/80 shadow-sm p-1.5 sm:p-2 cursor-pointer hover:border-blue-400'
+                      : 'z-10 min-h-[60px] sm:min-h-[72px] md:min-h-[110px] bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:bg-slate-850 p-1.5 sm:p-2 cursor-pointer'
                   }`}
                 >
-                  {/* EXPANDED VIEW: When cell is clicked, becomes bigger with animation & full multi-reservation access */}
+                  {/* EXPANDED VIEW: When cell is clicked on desktop, becomes bigger with animation & full multi-reservation access */}
                   {isExpanded ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.94 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.94 }}
-                      transition={{ type: 'spring', damping: 25, stiffness: 320 }}
-                      className={`flex flex-col justify-between h-full ${
-                        dayColumn <= 1
-                          ? 'md:absolute md:top-0 md:left-0 md:w-[350px] lg:md:w-[380px] md:z-40 md:p-3.5 md:bg-slate-900 md:border-2 md:border-blue-500 md:rounded-2xl md:shadow-2xl md:ring-4 md:ring-blue-500/20'
-                          : dayColumn >= 5
-                          ? 'md:absolute md:top-0 md:right-0 md:w-[350px] lg:md:w-[380px] md:z-40 md:p-3.5 md:bg-slate-900 md:border-2 md:border-blue-500 md:rounded-2xl md:shadow-2xl md:ring-4 md:ring-blue-500/20'
-                          : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:w-[350px] lg:md:w-[380px] md:z-40 md:p-3.5 md:bg-slate-900 md:border-2 md:border-blue-500 md:rounded-2xl md:shadow-2xl md:ring-4 md:ring-blue-500/20'
-                      }`}
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <>
+                      {/* Mobile compact fallback to prevent cell stretching */}
+                      <div className="md:hidden flex flex-col justify-between h-full">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[11px] font-black min-w-[20px] h-[20px] rounded-full flex items-center justify-center bg-cyan-400/20 text-cyan-300">
+                            {dayNumber}
+                          </span>
+                          {dayBookings.length > 0 && (
+                            <span className="text-[9px] font-extrabold px-1 rounded-full bg-slate-800 text-slate-300">
+                              {dayBookings.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-center flex-wrap gap-1 py-0.5 mt-auto">
+                          {dayBookings.slice(0, 3).map((bk) => (
+                            <span
+                              key={bk.id}
+                              className={`w-2 h-2 rounded-full ${getStatusDotColor(bk.status)}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Desktop Popover */}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.94 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.94 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 320 }}
+                        className={`hidden md:flex flex-col justify-between h-full ${
+                          dayColumn <= 1
+                            ? 'md:absolute md:top-0 md:left-0 md:w-[350px] lg:md:w-[380px] md:z-40 md:p-3.5 md:bg-slate-900 md:border-2 md:border-blue-500 md:rounded-2xl md:shadow-2xl md:ring-4 md:ring-blue-500/20'
+                            : dayColumn >= 5
+                            ? 'md:absolute md:top-0 md:right-0 md:w-[350px] lg:md:w-[380px] md:z-40 md:p-3.5 md:bg-slate-900 md:border-2 md:border-blue-500 md:rounded-2xl md:shadow-2xl md:ring-4 md:ring-blue-500/20'
+                            : 'md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2 md:w-[350px] lg:md:w-[380px] md:z-40 md:p-3.5 md:bg-slate-900 md:border-2 md:border-blue-500 md:rounded-2xl md:shadow-2xl md:ring-4 md:ring-blue-500/20'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                       {/* Expanded Header */}
                       <div className="flex items-center justify-between pb-2 border-b border-slate-800 gap-1">
                         <div className="flex items-center gap-2 min-w-0">
@@ -702,7 +741,8 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                         </button>
                       </div>
                     </motion.div>
-                  ) : (
+                  </>
+                ) : (
                     /* COMPACT VIEW (Unexpanded): Prevents cell saturation */
                     <div className="flex flex-col justify-between h-full">
                       {/* Day Header with clean badge and expand prompt */}
@@ -1203,6 +1243,260 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
           )}
         </div>
       )}
+
+      {/* MOBILE DAY BOTTOM SHEET DRAWER (< md) */}
+      <AnimatePresence>
+        {isMobileDaySheetOpen && selectedDateStr && (
+          <div className="md:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs"
+              onClick={() => setIsMobileDaySheetOpen(false)}
+            />
+
+            {/* Bottom Drawer */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed inset-x-0 bottom-0 z-50 bg-slate-900 border-t-2 border-blue-500 rounded-t-3xl p-4 shadow-2xl max-h-[85vh] flex flex-col text-white pb-safe"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drag Pill Handle */}
+              <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-3 flex-shrink-0" />
+
+              {/* Sheet Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-shrink-0 gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0">
+                    <CalendarDays className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold text-white capitalize truncate">
+                      {formatSelectedDateHuman(selectedDateStr)}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      {selectedDayBookings.length === 0
+                        ? 'Aucune réservation'
+                        : `${selectedDayBookings.length} réservation${selectedDayBookings.length > 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {onOpenBookingWizard && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileDaySheetOpen(false);
+                        onOpenBookingWizard(undefined, selectedDateStr);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Ajouter</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileDaySheetOpen(false)}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer border border-slate-700"
+                    aria-label="Fermer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Sheet Content (Scrollable) */}
+              <div className="flex-1 overflow-y-auto py-3 space-y-2.5 min-h-0">
+                {selectedDayBookings.length === 0 ? (
+                  <div className="py-8 text-center rounded-xl bg-slate-950/40 border border-dashed border-slate-800 text-slate-400 space-y-2 px-3">
+                    <Car className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="text-xs font-semibold text-slate-300">
+                      Aucune réservation pour le {selectedDateStr}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Tous les véhicules disponibles du parc peuvent être réservés à cette date.
+                    </p>
+                    {onOpenBookingWizard && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileDaySheetOpen(false);
+                          onOpenBookingWizard(undefined, selectedDateStr);
+                        }}
+                        className="mt-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Créer une réservation</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  selectedDayBookings.map((bk) => {
+                    const vehicle = vehicles.find((v) => v.id === bk.vehicleId);
+                    const isDepartureDay = bk.startDate === selectedDateStr;
+                    const isReturnDay = bk.endDate === selectedDateStr;
+
+                    return (
+                      <div
+                        key={bk.id}
+                        onClick={() => {
+                          setIsMobileDaySheetOpen(false);
+                          handleBookingClick(bk);
+                        }}
+                        className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2 cursor-pointer shadow-sm active:bg-slate-800 transition"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {vehicle?.images?.[0] ? (
+                              <img
+                                src={vehicle.images[0]}
+                                alt={bk.vehicleName}
+                                className="w-10 h-10 rounded-lg object-cover border border-slate-700 flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0">
+                                <Car className="w-5 h-5" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h4 className="text-xs font-black text-white truncate">
+                                  {bk.vehicleName || 'Véhicule'}
+                                </h4>
+                                {vehicle?.plate && (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 text-cyan-300 font-bold border border-slate-700">
+                                    {vehicle.plate}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-300 truncate flex items-center gap-1 mt-0.5">
+                                <User className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                                <span className="truncate">{bk.clientName}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            <span
+                              className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase ${getStatusBadge(
+                                bk.status
+                              )}`}
+                            >
+                              {bk.status === 'CONFIRMED'
+                                ? 'Confirmée'
+                                : bk.status === 'IN_PROGRESS'
+                                ? 'En cours'
+                                : bk.status === 'COMPLETED'
+                                ? 'Terminée'
+                                : bk.status}
+                            </span>
+                            <span className="text-xs font-black text-emerald-400">
+                              {bk.totalAmount} DT
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            <span>{bk.startDate} au {bk.endDate} ({bk.durationDays || 1}j)</span>
+                          </span>
+                          {isDepartureDay && (
+                            <span className="text-[9px] font-bold text-amber-400">Départ</span>
+                          )}
+                          {isReturnDay && (
+                            <span className="text-[9px] font-bold text-blue-400">Retour</span>
+                          )}
+                        </div>
+
+                        {/* Quick action buttons in bottom sheet */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          {bk.status === 'CONFIRMED' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMobileDaySheetOpen(false);
+                                handleStartCheckIn(bk);
+                              }}
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Key className="w-3.5 h-3.5" />
+                              <span>Check-In</span>
+                            </button>
+                          )}
+                          {bk.status === 'IN_PROGRESS' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMobileDaySheetOpen(false);
+                                handleStartCheckOut(bk);
+                              }}
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Check-Out</span>
+                            </button>
+                          )}
+                          {onOpenInvoice && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMobileDaySheetOpen(false);
+                                onOpenInvoice(bk.id);
+                              }}
+                              className="py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-blue-400" />
+                              <span>Facture</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsMobileDaySheetOpen(false);
+                              handleBookingClick(bk);
+                            }}
+                            className="py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Détails</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Sheet Footer */}
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span className="font-medium">
+                  {selectedDayBookings.length} résa{selectedDayBookings.length > 1 ? 's' : ''} au total
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDaySheetOpen(false)}
+                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 cursor-pointer"
+                >
+                  Fermer
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Booking Detail Modal when clicked */}
       {activeBookingModal && (

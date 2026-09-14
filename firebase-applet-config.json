@@ -3,7 +3,7 @@
   "appId": "1:208712743628:web:953a117bb4fd3a55872069",
   "apiKey": "AIzaSyB4V-6mgwRG8X6E7dw3RARBtlVUy_CHUwI",
   "authDomain": "logical-tempo-qmvz5.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-quantumfluxmobil-9eb3e2b9-20e8-4afa-b1fe-737940e581f7",
+  "firestoreDatabaseId": "(default)",
   "storageBucket": "logical-tempo-qmvz5.firebasestorage.app",
   "messagingSenderId": "208712743628",
   "measurementId": "",

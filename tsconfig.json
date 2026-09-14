@@ -22,5 +22,7 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "_git_clone_tmp", "AUTORENT-CAR-main"]
 }

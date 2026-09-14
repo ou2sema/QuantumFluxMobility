@@ -94,6 +94,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   const [pin, setPin] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [shake, setShake] = useState<boolean>(false);
 
   // Sync selected user when targetUser prop changes
@@ -106,7 +107,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   }, [targetUser]);
 
   const handleDigit = (digit: string) => {
-    if (pin.length >= 6 || isSuccess) return;
+    if (pin.length >= 6 || isSuccess || isVerifying) return;
     const newPin = pin + digit;
     setPin(newPin);
     setErrorMsg(null);
@@ -118,33 +119,48 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   };
 
   const handleDelete = () => {
-    if (isSuccess) return;
+    if (isSuccess || isVerifying) return;
     setPin(prev => prev.slice(0, -1));
     setErrorMsg(null);
   };
 
   const handleClear = () => {
-    if (isSuccess) return;
+    if (isSuccess || isVerifying) return;
     setPin('');
     setErrorMsg(null);
   };
 
-  const submitPin = (pinToTest: string, userId: string) => {
-    const ok = unlockWithPin(pinToTest, userId);
-    if (ok) {
-      setIsSuccess(true);
-      setErrorMsg(null);
-      setTimeout(() => {
-        if (onUnlocked) onUnlocked();
-        if (onCloseModal) onCloseModal();
-      }, 350);
-    } else {
-      setErrorMsg('Code PIN incorrect. Veuillez réessayer.');
+  const submitPin = async (pinToTest: string, userId: string) => {
+    if (isVerifying) return;
+    setIsVerifying(true);
+    setErrorMsg(null);
+
+    try {
+      const result = await unlockWithPin(pinToTest, userId);
+      if (result.success) {
+        setIsSuccess(true);
+        setErrorMsg(null);
+        setTimeout(() => {
+          if (onUnlocked) onUnlocked();
+          if (onCloseModal) onCloseModal();
+        }, 350);
+      } else {
+        setErrorMsg(result.error || 'Code PIN incorrect. Veuillez réessayer.');
+        setShake(true);
+        setTimeout(() => {
+          setShake(false);
+          setPin('');
+        }, 500);
+      }
+    } catch {
+      setErrorMsg('Erreur de connexion au service d\'authentification.');
       setShake(true);
       setTimeout(() => {
         setShake(false);
         setPin('');
       }, 500);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -265,7 +281,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
         <div className="w-full bg-[#151B30] border border-gray-800 rounded-2xl p-3.5 flex items-center gap-3">
           <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-700 border-2 border-blue-500 flex-shrink-0 flex items-center justify-center font-bold text-white text-sm">
             {selectedUser.avatarUrl ? (
-              <img src={selectedUser.avatarUrl} alt={selectedUser.name} className="w-full h-full object-cover" />
+              <img src={selectedUser.avatarUrl} alt={selectedUser.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               selectedUser.name.charAt(0)
             )}
@@ -273,10 +289,15 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-bold text-white truncate">{selectedUser.name}</h3>
             <p className="text-xs text-gray-400 truncate">{selectedUser.jobTitle || selectedUser.email}</p>
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono border ${roleMeta.color}`}>
                 {roleMeta.label}
               </span>
+              {selectedUser.id === 'u-admin-oussema' && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 bg-amber-500/20 border border-amber-500/40">
+                  PIN Test: <strong className="font-bold">2846</strong>
+                </span>
+              )}
             </div>
           </div>
         </div>

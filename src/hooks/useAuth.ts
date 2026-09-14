@@ -19,7 +19,7 @@ export const useAuth = () => {
       email: `${role.toLowerCase()}@autofleet.fr`,
       role,
       agencyId: 'agency-paris-orly',
-      pinCode: '1111',
+      pinConfigured: true,
     };
     setCurrentUser(matchingUser);
   };

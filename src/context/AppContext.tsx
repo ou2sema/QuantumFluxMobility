@@ -30,13 +30,15 @@ export interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   users: User[];
-  addUser: (userData: Omit<User, 'id'>) => User;
-  updateUser: (id: string, userData: Partial<User>) => void;
-  deleteUser: (id: string) => void;
+  sessionToken?: string | null;
+  addUser: (userData: Omit<User, 'id'> & { pinCode?: string; pin?: string }) => Promise<User> | User;
+  updateUser: (id: string, userData: Partial<User>) => Promise<void> | void;
+  deleteUser: (id: string) => Promise<void> | void;
+  resetUserPin?: (userId: string, newPin: string) => Promise<void>;
   isLocked: boolean;
   setIsLocked: (locked: boolean) => void;
   lockApp: () => void;
-  unlockWithPin: (pin: string, targetUserId?: string) => boolean;
+  unlockWithPin: (pin: string, targetUserId?: string) => Promise<{ success: boolean; error?: string; isLocked?: boolean; lockedUntil?: number }>;
 
   // Agencies
   currentAgency: Agency;
@@ -73,6 +75,14 @@ export interface AppContextType {
   completeCheckOut: (checkOutData: Omit<CheckOut, 'id' | 'timestamp'>) => CheckOut;
   extras: ExtraItem[];
   generateInvoice: (bookingId: string) => Invoice;
+  updateBooking: (updatedBooking: Booking) => void;
+  cancelBooking: (
+    bookingId: string,
+    reason?: string,
+    refundAmount?: number,
+    cancellationFee?: number,
+    cancelledBy?: string
+  ) => Promise<{ success: boolean; error?: string }>;
 
   // Maintenance
   maintenances: MaintenanceRecord[];

@@ -49,7 +49,9 @@ export const MaintenanceProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setFirestoreDoc('maintenances', newRecord.id, newRecord).catch(() => {});
 
       if (newRecord.status === 'IN_PROGRESS') {
-        updateVehicleStatus(newRecord.vehicleId, 'MAINTENANCE');
+        setTimeout(() => {
+          updateVehicleStatus(newRecord.vehicleId, 'MAINTENANCE');
+        }, 0);
       }
 
       toast.success(`Intervention atelier enregistrée (${newRecord.title})`);
@@ -68,7 +70,9 @@ export const MaintenanceProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (recordData.status === 'COMPLETED') {
         const item = maintenances.find((m) => m.id === id);
         if (item) {
-          updateVehicleStatus(item.vehicleId, 'AVAILABLE');
+          setTimeout(() => {
+            updateVehicleStatus(item.vehicleId, 'AVAILABLE');
+          }, 0);
         }
       }
 
