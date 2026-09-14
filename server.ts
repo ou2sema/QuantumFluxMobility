@@ -14,17 +14,6 @@ async function startServer() {
   // Mount API Router FIRST
   app.use('/api', apiRouter);
 
-  // Initialize secure credentials and migrate any legacy plaintext PINs
-  try {
-    await initDefaultCredentials();
-    const migration = await migrateLegacyPlaintextPins();
-    if (migration.migratedCount > 0) {
-      console.log(`[Security] Migrated ${migration.migratedCount} legacy accounts to secure hashed credentials.`);
-    }
-  } catch (err) {
-    console.warn('[Security] Warning during startup auth initialization:', err);
-  }
-
   // Vite middleware for development vs Static serving for production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -40,9 +29,22 @@ async function startServer() {
     });
   }
 
+  // Listen immediately on port 3000 so the dev proxy is active without delay
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
+
+  // Initialize secure credentials in background without delaying server startup
+  initDefaultCredentials()
+    .then(() => migrateLegacyPlaintextPins())
+    .then((migration) => {
+      if (migration && migration.migratedCount > 0) {
+        console.log(`[Security] Migrated ${migration.migratedCount} legacy accounts to secure hashed credentials.`);
+      }
+    })
+    .catch((err) => {
+      console.warn('[Security] Warning during startup auth initialization:', err);
+    });
 }
 
 startServer();

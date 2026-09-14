@@ -218,9 +218,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }),
         });
 
-        const data = await response.json();
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
 
-        if (response.ok && data.success) {
+        if (response.ok && data && data.success) {
           if (data.sessionToken) {
             setSessionToken(data.sessionToken);
             try {
@@ -238,15 +243,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           return {
             success: false,
-            error: data.error || 'Identifiants invalides.',
-            isLocked: data.isLocked,
-            lockedUntil: data.lockedUntil,
+            error: data?.error || (response.status === 401 ? 'Code PIN incorrect. Veuillez réessayer.' : 'Identifiants invalides.'),
+            isLocked: data?.isLocked,
+            lockedUntil: data?.lockedUntil,
           };
         }
       } catch (err: any) {
         return {
           success: false,
-          error: 'Impossible de contacter le serveur d\'authentification sécurisé.',
+          error: 'Serveur temporairement indisponible. Veuillez patienter un instant.',
         };
       }
     },

@@ -208,91 +208,93 @@ export function verifySessionToken(token: string): SessionPayload | null {
 export const localCredentialsStore = new Map<string, ServerUserCredential>();
 export const localProfilesStore = new Map<string, ServerUserRecord>();
 
+const INITIAL_STAFF_DATA = [
+  {
+    id: 'u-admin-oussema',
+    name: 'Oussema (Admin Test)',
+    email: 'ou2sema@gmail.com',
+    role: 'ADMIN' as UserRole,
+    agencyId: 'agency-tunis-carthage',
+    phone: '+216 98 123 456',
+    jobTitle: 'Super Administrateur & Directeur Général',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    active: true,
+    initialPin: '2846', // Secure, non-sequential PIN for testing
+  },
+  {
+    id: 'u-admin-1',
+    name: 'Alexandre Royer (Admin)',
+    email: 'admin@autofleet.fr',
+    role: 'ADMIN' as UserRole,
+    agencyId: 'agency-tunis-carthage',
+    phone: '+33 6 11 22 33 44',
+    jobTitle: 'Directeur d\'Agence & Administrateur',
+    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+    active: true,
+    initialPin: '9582', // Random, non-sequential PIN
+  },
+  {
+    id: 'u-comptoir-1',
+    name: 'Karim Benali',
+    email: 'k.benali@autofleet.fr',
+    role: 'AGENT_COMPTOIR' as UserRole,
+    agencyId: 'agency-paris-orly',
+    phone: '+33 6 12 34 56 78',
+    jobTitle: 'Agent de Comptoir & Accueil',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    active: true,
+    initialPin: '7419', // Random, non-sequential PIN
+  },
+  {
+    id: 'u-technique-1',
+    name: 'Nader Mejri',
+    email: 'n.mejri@autofleet.fr',
+    role: 'AGENT_TECHNIQUE' as UserRole,
+    agencyId: 'agency-paris-orly',
+    phone: '+33 6 45 67 89 01',
+    jobTitle: 'Chef d\'Atelier & Agent Technique Flotte',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    active: true,
+    initialPin: '6824', // Random, non-sequential PIN
+  },
+  {
+    id: 'u-comptoir-2',
+    name: 'Sophie Martin',
+    email: 's.martin@autofleet.fr',
+    role: 'AGENT_COMPTOIR' as UserRole,
+    agencyId: 'agency-paris-orly',
+    phone: '+33 6 98 76 54 32',
+    jobTitle: 'Chargée de Réservations & Remise Clés',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    active: true,
+    initialPin: '5293', // Random, non-sequential PIN
+  },
+];
+
+// Synchronously seed stores so memory lookups are instantly ready
+for (const staff of INITIAL_STAFF_DATA) {
+  const { initialPin, ...profileData } = staff;
+  const profile: ServerUserRecord = {
+    ...profileData,
+    pinConfigured: true,
+    createdAt: new Date().toISOString(),
+  };
+  localProfilesStore.set(profile.id, profile);
+  const hash = bcrypt.hashSync(initialPin, BCRYPT_SALT_ROUNDS);
+  localCredentialsStore.set(profile.id, {
+    userId: profile.id,
+    pinHash: hash,
+    failedAttempts: 0,
+    lockedUntil: null,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 // Pre-populate default staff credentials with unique bcrypt hashes (NO 0000, NO plaintext)
 export async function initDefaultCredentials(): Promise<void> {
-  // Ensure default staff have hashed credentials in local storage as well as Firestore
-  const initialStaff = [
-    {
-      id: 'u-admin-oussema',
-      name: 'Oussema (Admin Test)',
-      email: 'ou2sema@gmail.com',
-      role: 'ADMIN',
-      agencyId: 'agency-tunis-carthage',
-      phone: '+216 98 123 456',
-      jobTitle: 'Super Administrateur & Directeur Général',
-      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      active: true,
-      initialPin: '2846', // Secure, non-sequential PIN for testing
-    },
-    {
-      id: 'u-admin-1',
-      name: 'Alexandre Royer (Admin)',
-      email: 'admin@autofleet.fr',
-      role: 'ADMIN',
-      agencyId: 'agency-tunis-carthage',
-      phone: '+33 6 11 22 33 44',
-      jobTitle: 'Directeur d\'Agence & Administrateur',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-      active: true,
-      initialPin: '9582', // Random, non-sequential PIN
-    },
-    {
-      id: 'u-comptoir-1',
-      name: 'Karim Benali',
-      email: 'k.benali@autofleet.fr',
-      role: 'AGENT_COMPTOIR',
-      agencyId: 'agency-paris-orly',
-      phone: '+33 6 12 34 56 78',
-      jobTitle: 'Agent de Comptoir & Accueil',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      active: true,
-      initialPin: '7419', // Random, non-sequential PIN
-    },
-    {
-      id: 'u-technique-1',
-      name: 'Nader Mejri',
-      email: 'n.mejri@autofleet.fr',
-      role: 'AGENT_TECHNIQUE',
-      agencyId: 'agency-paris-orly',
-      phone: '+33 6 45 67 89 01',
-      jobTitle: 'Chef d\'Atelier & Agent Technique Flotte',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      active: true,
-      initialPin: '6824', // Random, non-sequential PIN
-    },
-    {
-      id: 'u-comptoir-2',
-      name: 'Sophie Martin',
-      email: 's.martin@autofleet.fr',
-      role: 'AGENT_COMPTOIR',
-      agencyId: 'agency-paris-orly',
-      phone: '+33 6 98 76 54 32',
-      jobTitle: 'Chargée de Réservations & Remise Clés',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      active: true,
-      initialPin: '5293', // Random, non-sequential PIN
-    },
-  ];
-
-  for (const staff of initialStaff) {
-    const { initialPin, ...profileData } = staff;
-    const profile: ServerUserRecord = {
-      ...profileData,
-      pinConfigured: true,
-      createdAt: new Date().toISOString(),
-    };
-    localProfilesStore.set(profile.id, profile);
-
-    // Generate bcrypt hash
-    const hash = await bcrypt.hash(initialPin, BCRYPT_SALT_ROUNDS);
-    const cred: ServerUserCredential = {
-      userId: profile.id,
-      pinHash: hash,
-      failedAttempts: 0,
-      lockedUntil: null,
-      updatedAt: new Date().toISOString(),
-    };
-    localCredentialsStore.set(profile.id, cred);
+  for (const staff of INITIAL_STAFF_DATA) {
+    const profile = localProfilesStore.get(staff.id)!;
+    const cred = localCredentialsStore.get(staff.id)!;
 
     // Also attempt to sync to Firestore if database is online
     try {
@@ -344,16 +346,39 @@ export async function authenticateWithPin(
     };
   }
 
-  // 3. Find user profile (check Firestore, then memory store)
+  // 3. Find user profile (check Firestore, then memory store, then fallback to email/alias match)
   let user = await getUserProfile(userId);
   if (!user) {
     user = localProfilesStore.get(userId) || null;
   }
+  if (!user) {
+    const term = userId.trim().toLowerCase();
+    for (const p of localProfilesStore.values()) {
+      if (
+        p.id.toLowerCase() === term ||
+        p.email.toLowerCase() === term ||
+        p.name.toLowerCase().includes(term) ||
+        (term.includes('oussema') && p.id === 'u-admin-oussema')
+      ) {
+        user = p;
+        break;
+      }
+    }
+  }
 
-  // 4. Find user credential (check Firestore, then memory store)
-  let cred = await getUserCredential(userId);
+  // 4. Find user credential (check by resolved user ID or original userId)
+  let cred: ServerUserCredential | null = null;
+  if (user) {
+    cred = await getUserCredential(user.id);
+    if (!cred) {
+      cred = localCredentialsStore.get(user.id) || null;
+    }
+  }
   if (!cred) {
-    cred = localCredentialsStore.get(userId) || null;
+    cred = await getUserCredential(userId);
+    if (!cred) {
+      cred = localCredentialsStore.get(userId) || null;
+    }
   }
 
   // Account enumeration prevention: If user or cred doesn't exist, do a dummy bcrypt comparison

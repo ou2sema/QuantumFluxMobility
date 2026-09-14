@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { User, UserRole } from '../../types';
 import {
@@ -84,6 +84,19 @@ const TEST_PINS: Record<string, string> = {
   'u-comptoir-2': '5293',
 };
 
+const getTestPinForUser = (user?: User | null): string | null => {
+  if (!user) return null;
+  if (user.id && TEST_PINS[user.id]) return TEST_PINS[user.id];
+  const email = (user.email || '').toLowerCase();
+  const name = (user.name || '').toLowerCase();
+  if (email === 'ou2sema@gmail.com' || name.includes('oussema')) return '2846';
+  if (email === 'admin@autofleet.fr') return '9582';
+  if (email === 'k.benali@autofleet.fr') return '7419';
+  if (email === 'n.mejri@autofleet.fr') return '6824';
+  if (email === 's.martin@autofleet.fr') return '5293';
+  return null;
+};
+
 export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   onUnlocked,
   isModal = false,
@@ -94,10 +107,25 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   mandatory = false,
 }) => {
   const { users, currentUser, unlockWithPin, currentAgency } = useApp();
+
+  // Deduplicate users list by email or unique identity
+  const displayUsers = useMemo(() => {
+    const seen = new Set<string>();
+    const list: User[] = [];
+    for (const u of users) {
+      const key = (u.email || u.name || u.id).toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(u);
+      }
+    }
+    return list.length > 0 ? list : users;
+  }, [users]);
+
   const [selectedUser, setSelectedUser] = useState<User>(() => {
     if (targetUser) return targetUser;
     if (currentUser) return currentUser;
-    return users[0];
+    return displayUsers[0] || users[0];
   });
   const [pin, setPin] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -243,15 +271,15 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
         <div className="w-full flex flex-col gap-1.5">
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
-              Profil à authentifier ({users.length})
+              Profil à authentifier ({displayUsers.length})
             </span>
             <span className="text-[10px] text-gray-500 font-mono">
               {targetUser ? 'Compte sélectionné' : 'Choisir un profil'}
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-1 bg-[#0A0E1A] rounded-2xl border border-gray-800 max-h-36 overflow-y-auto">
-            {users.map(u => {
-              const isSelected = selectedUser.id === u.id;
+            {displayUsers.map(u => {
+              const isSelected = selectedUser.id === u.id || selectedUser.email === u.email;
               const meta = ROLE_INFO[u.role] || ROLE_INFO.ADMIN;
               const Icon = meta.icon;
 
@@ -301,11 +329,11 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono border ${roleMeta.color}`}>
                 {roleMeta.label}
               </span>
-              {TEST_PINS[selectedUser.id] && (
+              {getTestPinForUser(selectedUser) && (
                 <button
                   type="button"
                   onClick={() => {
-                    const testPin = TEST_PINS[selectedUser.id];
+                    const testPin = getTestPinForUser(selectedUser)!;
                     setPin(testPin);
                     submitPin(testPin, selectedUser.id);
                   }}
@@ -313,7 +341,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
                   title="Cliquer pour tester la connexion automatique"
                 >
                   <span>PIN Test :</span>
-                  <strong className="font-bold underline">{TEST_PINS[selectedUser.id]}</strong>
+                  <strong className="font-bold underline">{getTestPinForUser(selectedUser)}</strong>
                 </button>
               )}
             </div>

@@ -62,16 +62,21 @@ export function requireAdmin(req: AuthenticatedRequest, res: Response, next: Nex
 
 // POST /api/auth/pin-login
 apiRouter.post('/auth/pin-login', async (req: Request, res: Response) => {
-  const { userId, pin } = req.body || {};
-  if (!userId || !pin) {
-    res.status(400).json({ success: false, error: 'Identifiant utilisateur et code PIN requis.' });
-    return;
+  try {
+    const { userId, pin } = req.body || {};
+    if (!userId || !pin) {
+      res.status(400).json({ success: false, error: 'Identifiant utilisateur et code PIN requis.' });
+      return;
+    }
+
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const result = await authenticateWithPin(String(userId).trim(), String(pin).trim(), ip);
+
+    res.status(result.statusCode || 200).json(result);
+  } catch (err: any) {
+    console.error('Unhandled error in /api/auth/pin-login:', err);
+    res.status(500).json({ success: false, error: 'Erreur interne du serveur lors de la vérification.' });
   }
-
-  const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  const result = await authenticateWithPin(String(userId).trim(), String(pin).trim(), ip);
-
-  res.status(result.statusCode).json(result);
 });
 
 // GET /api/auth/session
