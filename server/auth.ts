@@ -86,11 +86,28 @@ export async function hashPin(pin: string): Promise<{ pinHash: string; salt: str
 }
 
 // Secure PIN verification against bcrypt hash
-export async function verifyPin(pin: string, hash: string): Promise<boolean> {
+export async function verifyPin(pin: string, hash: string | any): Promise<boolean> {
   if (!pin || !hash) return false;
-  // Explicitly ensure master PIN '0000' never bypasses
+  if (typeof pin !== 'string') pin = String(pin);
   if (pin.trim() === '0000') return false;
-  return bcrypt.compare(pin.trim(), hash);
+
+  let stringHash = '';
+  if (typeof hash === 'string') {
+    stringHash = hash.trim();
+  } else if (typeof hash === 'object' && hash !== null) {
+    stringHash = String(hash.pinHash || hash.hash || '').trim();
+  }
+
+  if (!stringHash || !stringHash.startsWith('$2')) {
+    return false;
+  }
+
+  try {
+    return await bcrypt.compare(pin.trim(), stringHash);
+  } catch (err) {
+    console.error('Bcrypt compare error:', err);
+    return false;
+  }
 }
 
 export async function setUserPin(userId: string, pin: string): Promise<void> {
@@ -393,11 +410,25 @@ export async function authenticateWithPin(
     }
   }
 
+  // Normalize cred.pinHash if it was stored as an object or non-string
+  if (cred) {
+    if (typeof cred.pinHash === 'object' && cred.pinHash !== null) {
+      cred.pinHash = (cred.pinHash as any).pinHash || (cred.pinHash as any).hash || '';
+    }
+    if (typeof cred.pinHash !== 'string') {
+      cred.pinHash = String(cred.pinHash || '');
+    }
+  }
+
   // If user exists but cred was not yet seeded in userCredentials collection,
   // derive it from the user's Firestore pinCode or initial setup
   if (user && !cred) {
-    const rawPin = (user as any).rawPinCode || (user as any).pinCode || '1234';
-    const initHash = await bcrypt.hash(String(rawPin), BCRYPT_SALT_ROUNDS);
+    let rawPin = (user as any).rawPinCode || (user as any).pinCode || '1234';
+    if (typeof rawPin === 'object' && rawPin !== null) {
+      rawPin = (rawPin as any).pinCode || (rawPin as any).pin || '1234';
+    }
+    const pinStr = typeof rawPin === 'string' || typeof rawPin === 'number' ? String(rawPin).trim() : '1234';
+    const initHash = await bcrypt.hash(pinStr, BCRYPT_SALT_ROUNDS);
     cred = {
       userId: user.id,
       pinHash: initHash,

@@ -1,4 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAnalytics, isSupported as isAnalyticsSupported, Analytics } from 'firebase/analytics';
 import {
   getFirestore,
   setLogLevel,
@@ -35,6 +36,20 @@ export const firebaseConfig = {
 
 // Initialize Firebase App
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+// Initialize Firebase Analytics safely (client-side only)
+export let analytics: Analytics | null = null;
+if (typeof window !== 'undefined') {
+  isAnalyticsSupported().then((supported) => {
+    if (supported) {
+      try {
+        analytics = getAnalytics(app);
+      } catch (e) {
+        console.warn('Firebase Analytics initialization skipped:', e);
+      }
+    }
+  }).catch(() => {});
+}
 
 // Initialize Firestore with database ID normalized to '(default)'
 const rawDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId;

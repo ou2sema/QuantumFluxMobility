@@ -23,7 +23,7 @@ try {
 } catch (e) {
   console.warn('Could not load firebase-applet-config.json, using environment variables');
   firebaseConfig = {
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'logical-tempo-qmvz5',
+    projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'quantumflux-mobility',
     apiKey: process.env.VITE_FIREBASE_API_KEY || '',
     authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || '',
     firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)',

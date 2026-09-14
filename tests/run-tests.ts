@@ -98,6 +98,10 @@ async function runTests() {
   const correctMatch = await verifyPin(testPin, hashed.pinHash);
   assert(correctMatch, 'Correct PIN matches bcrypt hash');
 
+  // Verify object hash parameter does not throw "Illegal arguments: string, object"
+  const objectHashMatch = await verifyPin(testPin, hashed as any);
+  assert(objectHashMatch, 'Object hash parameter is safely handled without throwing');
+
   const wrongMatch = await verifyPin('8493', hashed.pinHash);
   assert(!wrongMatch, 'Incorrect PIN fails bcrypt verification');
 

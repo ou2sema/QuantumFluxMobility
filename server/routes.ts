@@ -144,7 +144,7 @@ apiRouter.post('/admin/users', requireAdmin, async (req: AuthenticatedRequest, r
 
     // Generate new user ID
     const newId = `u-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
-    const pinHash = await hashPin(pin);
+    const { pinHash, salt } = await hashPin(pin);
 
     const newProfile: ServerUserRecord = {
       id: newId,
@@ -163,6 +163,7 @@ apiRouter.post('/admin/users', requireAdmin, async (req: AuthenticatedRequest, r
     const newCred: ServerUserCredential = {
       userId: newId,
       pinHash,
+      salt,
       failedAttempts: 0,
       lockedUntil: null,
       updatedAt: new Date().toISOString(),
@@ -250,11 +251,12 @@ apiRouter.post('/admin/users/:userId/reset-pin', requireAdmin, async (req: Authe
       return;
     }
 
-    const pinHash = await hashPin(newPin);
+    const { pinHash, salt } = await hashPin(newPin);
 
     const cred: ServerUserCredential = {
       userId,
       pinHash,
+      salt,
       failedAttempts: 0,
       lockedUntil: null,
       updatedAt: new Date().toISOString(),
