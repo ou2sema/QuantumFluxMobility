@@ -6,6 +6,8 @@ import {
   signInWithGooglePopup,
   signOutFirebase,
   subscribeToCollection,
+  setFirestoreDoc,
+  deleteFirestoreDoc,
 } from '../lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
@@ -334,6 +336,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser((prev) => sanitizeUser({ ...prev, ...userData }));
       }
 
+      // Also ensure Firestore document in appUsers is synced directly
+      const cleanData: any = { ...userData };
+      delete cleanData.pinCode;
+      delete cleanData.pinHash;
+      setFirestoreDoc('appUsers', id, cleanData).catch(() => {});
+
       const token = sessionToken || sessionStorage.getItem(SESSION_STORAGE_TOKEN_KEY);
       try {
         await fetch(`/api/admin/users/${id}`, {
@@ -345,7 +353,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           body: JSON.stringify(userData),
         });
       } catch (err) {
-        console.warn('Could not sync user update to server:', err);
+        console.warn('Could not sync user update to server API:', err);
       }
     },
     [currentUser.id, sessionToken]
@@ -355,6 +363,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteUser = useCallback(
     async (id: string) => {
       setUsers((prev) => prev.filter((u) => u.id !== id));
+
+      // Also delete immediately from client-side Firestore appUsers collection
+      deleteFirestoreDoc('appUsers', id).catch(() => {});
+
       const token = sessionToken || sessionStorage.getItem(SESSION_STORAGE_TOKEN_KEY);
       try {
         await fetch(`/api/admin/users/${id}`, {
@@ -364,7 +376,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         });
       } catch (err) {
-        console.warn('Could not sync user deletion to server:', err);
+        console.warn('Could not sync user deletion to server API:', err);
       }
     },
     [sessionToken]

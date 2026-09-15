@@ -199,6 +199,17 @@ export async function deactivateUserProfile(userId: string): Promise<void> {
   );
 }
 
+// Helper: Completely delete user profile document from Firestore
+export async function deleteUserProfile(userId: string): Promise<void> {
+  memoryUsers.delete(userId);
+  await runWithFirestore(
+    async () => {
+      await deleteDoc(doc(serverDb, 'appUsers', userId));
+    },
+    () => {}
+  );
+}
+
 // Helper: Get user credential (ONLY for authentication backend)
 export async function getUserCredential(userId: string): Promise<ServerUserCredential | null> {
   return runWithFirestore(
