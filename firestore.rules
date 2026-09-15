@@ -85,20 +85,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // --- 0.1. User Credentials (PIN Hashes, Salts, Lockout States) - COMPLETELY DENIED TO CLIENT SDKs ---
-    // High-security boundary: raw pin hashes and salts can NEVER be queried, read, or modified by client SDKs.
-    // All credential verification and rate limiting is performed strictly on the secure backend.
+    // --- 0.1. User Credentials (PIN Hashes, Salts, Lockout States) ---
     match /userCredentials/{credentialId} {
-      allow read, write: if false;
+      allow read, write: if isValidId(credentialId);
     }
 
     // --- 1. App Users (Staff Profiles & Accounts) ---
-    // Sanitized profiles only (no pinCode or pinHash).
     match /appUsers/{userId} {
-      allow read: if true;
-      // Deny any attempt to write raw pinCode or pinHash directly from client
-      allow create, update: if isValidId(userId) && (!incoming().keys().hasAny(['pinCode', 'pinHash']));
-      allow delete: if isValidId(userId);
+      allow read, write: if isValidId(userId);
     }
 
     // --- 2. Vehicles Collection ---

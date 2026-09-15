@@ -65,19 +65,17 @@ export interface ServerUserCredential {
   updatedAt: string;
 }
 
-// Helper to prevent hanging operations when Firestore database is offline or not found
-let isFirestoreOffline = false;
-const TIMEOUT_MS = 2500;
+// Helper to ensure operations don't block indefinitely
+const TIMEOUT_MS = 10000;
 
 function withTimeout<T>(promise: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
   let timer: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('Firestore timeout')), ms);
+    timer = setTimeout(() => reject(new Error(`Firestore operation timed out after ${ms}ms`)), ms);
   });
   return Promise.race([
     promise.then((res) => {
       clearTimeout(timer);
-      isFirestoreOffline = false;
       return res;
     }),
     timeoutPromise,
@@ -85,14 +83,11 @@ function withTimeout<T>(promise: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
 }
 
 async function runWithFirestore<T>(op: () => Promise<T>, fallback: () => T | Promise<T>): Promise<T> {
-  if (isFirestoreOffline) {
-    return fallback();
-  }
   try {
     const res = await withTimeout(op(), TIMEOUT_MS);
     return res;
   } catch (err: any) {
-    isFirestoreOffline = true;
+    console.error('Firestore operation warning/error:', err?.message || err);
     return fallback();
   }
 }
@@ -194,17 +189,6 @@ export async function deactivateUserProfile(userId: string): Promise<void> {
         active: false,
         updatedAt: new Date().toISOString(),
       });
-    },
-    () => {}
-  );
-}
-
-// Helper: Completely delete user profile document from Firestore
-export async function deleteUserProfile(userId: string): Promise<void> {
-  memoryUsers.delete(userId);
-  await runWithFirestore(
-    async () => {
-      await deleteDoc(doc(serverDb, 'appUsers', userId));
     },
     () => {}
   );
