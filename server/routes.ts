@@ -9,12 +9,12 @@ import {
   SessionPayload,
 } from './auth';
 import {
+  
   getUserProfile,
   listUserProfiles,
   saveUserProfile,
   saveUserCredential,
   deactivateUserProfile,
-  deleteUserProfile,
   deleteUserCredential,
   logSecurityEvent,
   ServerUserRecord,
@@ -301,16 +301,16 @@ apiRouter.delete('/admin/users/:userId', requireAdmin, async (req: Authenticated
     localProfilesStore.delete(userId);
     localCredentialsStore.delete(userId);
 
-    await deleteUserProfile(userId);
+    await deactivateUserProfile(userId);
     await deleteUserCredential(userId);
 
     await logSecurityEvent(
       req.sessionUser!.userId,
       'ADMIN_DELETE_USER',
-      `Admin deleted user ${userId}`
+      `Admin deactivated/deleted user ${userId}`
     );
 
-    res.json({ success: true, message: 'Utilisateur supprimé avec succès.' });
+    res.json({ success: true, message: 'Utilisateur supprimé/désactivé avec succès.' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Erreur lors de la suppression.' });
   }
