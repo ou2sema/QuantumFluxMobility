@@ -7,9 +7,10 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>(defaultFacingMode);
   const [isTorchOn, setIsTorchOn] = useState<boolean>(false);
   const [hasTorch, setHasTorch] = useState<boolean>(false);
+  
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  // Safely attach stream to video element and trigger play on mobile
   const attachStreamToVideo = useCallback((video: HTMLVideoElement | null, mediaStream: MediaStream | null) => {
     if (!video) return;
 
@@ -45,39 +46,40 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
         try {
           track.stop();
         } catch (e) {
           // ignore
         }
       });
-      setStream(null);
+      streamRef.current = null;
     }
+    setStream(null);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
     setIsTorchOn(false);
     setHasTorch(false);
-  }, [stream]);
+  }, []);
 
-  const startCamera = useCallback(async (mode: 'user' | 'environment' = facingMode) => {
+  const startCamera = useCallback(async (mode: 'user' | 'environment' = defaultFacingMode) => {
     try {
       setError(null);
       setFacingMode(mode);
 
-      // Stop previous tracks if any
-      if (stream) {
-        stream.getTracks().forEach(track => {
+      // Stop previous active stream tracks using ref (prevents lifecycle loops)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
           try {
             track.stop();
           } catch (e) {
             // ignore
           }
         });
-        setStream(null);
+        streamRef.current = null;
       }
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -86,7 +88,6 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
 
       let mediaStream: MediaStream;
 
-      // Tier 1: Ideal constraints for mobile cameras
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -97,18 +98,12 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
           audio: false,
         });
       } catch (tier1Err) {
-        console.warn('Initial camera constraints failed, attempting fallback:', tier1Err);
-        // Tier 2: Simple facingMode
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: mode,
-            },
+            video: { facingMode: mode },
             audio: false,
           });
         } catch (tier2Err) {
-          console.warn('Tier 2 camera constraints failed, falling back to basic video:', tier2Err);
-          // Tier 3: Basic video
           mediaStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false,
@@ -116,17 +111,16 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
         }
       }
 
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setIsCameraActive(true);
 
-      // Check for torch capability
       const videoTrack = mediaStream.getVideoTracks()[0];
       if (videoTrack) {
         const capabilities = (videoTrack.getCapabilities ? videoTrack.getCapabilities() : {}) as any;
         setHasTorch(Boolean(capabilities?.torch));
       }
 
-      // If video element is already mounted, attach immediately
       if (videoRef.current) {
         attachStreamToVideo(videoRef.current, mediaStream);
       }
@@ -143,7 +137,7 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
       setError(errorMsg);
       setIsCameraActive(false);
     }
-  }, [facingMode, stream, attachStreamToVideo]);
+  }, [defaultFacingMode, attachStreamToVideo]);
 
   const switchCamera = useCallback(() => {
     const nextMode = facingMode === 'environment' ? 'user' : 'environment';
@@ -151,8 +145,8 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
   }, [facingMode, startCamera]);
 
   const toggleTorch = useCallback(async () => {
-    if (!stream) return;
-    const videoTrack = stream.getVideoTracks()[0];
+    if (!streamRef.current) return;
+    const videoTrack = streamRef.current.getVideoTracks()[0];
     if (!videoTrack) return;
 
     try {
@@ -164,7 +158,7 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
     } catch (e) {
       console.warn('Torch toggle failed:', e);
     }
-  }, [stream, isTorchOn]);
+  }, [isTorchOn]);
 
   const capturePhoto = useCallback((): string | null => {
     if (!videoRef.current || !isCameraActive) return null;
@@ -176,7 +170,6 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // Add timestamp watermark
         ctx.font = '14px sans-serif';
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
         ctx.fillRect(10, canvas.height - 30, 200, 24);
@@ -190,18 +183,16 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
     return null;
   }, [isCameraActive]);
 
-  // Synchronize stream with videoRef whenever either changes
   useEffect(() => {
     if (videoRef.current && stream && isCameraActive) {
       attachStreamToVideo(videoRef.current, stream);
     }
   }, [stream, isCameraActive, attachStreamToVideo]);
 
-  // Clean up tracks when hook unmounts
   useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
           try {
             track.stop();
           } catch (e) {
@@ -210,7 +201,7 @@ export const useCamera = (defaultFacingMode: 'user' | 'environment' = 'environme
         });
       }
     };
-  }, [stream]);
+  }, []);
 
   return {
     videoRef,
